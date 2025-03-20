@@ -1,7 +1,7 @@
 const { ipcRenderer } = require("electron");
 
 // DOM Elements
-const mediaPlayer = document.getElementById("mediaPlayer");
+const videoPlayer = document.getElementById("videoPlayer");
 const playlist = document.getElementById("playlist");
 const addFileBtn = document.getElementById("addFile");
 const playPauseBtn = document.getElementById("playPauseBtn");
@@ -19,6 +19,9 @@ const muteBtn = document.getElementById("muteBtn");
 const pipBtn = document.getElementById("pipBtn");
 const togglePlaylistBtn = document.getElementById("togglePlaylist");
 const container = document.querySelector(".container");
+const welcomeScreen = document.querySelector(".welcome-screen");
+const selectFileBtn = document.getElementById("selectFileBtn");
+const mediaContainer = document.querySelector(".media-container");
 
 // State
 let playlistItems = [];
@@ -40,21 +43,21 @@ document.addEventListener("keydown", (e) => {
       break;
     case "ArrowLeft":
       e.preventDefault();
-      mediaPlayer.currentTime -= 5; // Rewind 5 seconds
+      videoPlayer.currentTime -= 5; // Rewind 5 seconds
       break;
     case "ArrowRight":
       e.preventDefault();
-      mediaPlayer.currentTime += 5; // Forward 5 seconds
+      videoPlayer.currentTime += 5; // Forward 5 seconds
       break;
     case "ArrowUp":
       e.preventDefault();
-      mediaPlayer.volume = Math.min(1, mediaPlayer.volume + 0.1);
-      volumeSlider.value = mediaPlayer.volume * 100;
+      videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
+      volumeSlider.value = videoPlayer.volume * 100;
       break;
     case "ArrowDown":
       e.preventDefault();
-      mediaPlayer.volume = Math.max(0, mediaPlayer.volume - 0.1);
-      volumeSlider.value = mediaPlayer.volume * 100;
+      videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
+      volumeSlider.value = videoPlayer.volume * 100;
       break;
     case "KeyF":
       toggleFullscreen();
@@ -102,7 +105,7 @@ document.addEventListener("mouseup", (e) => {
     // Perform the final seek immediately
     const rect = progressContainer.getBoundingClientRect();
     const pos = Math.min(Math.max(0, (e.clientX - rect.left) / rect.width), 1);
-    mediaPlayer.currentTime = pos * mediaPlayer.duration;
+    videoPlayer.currentTime = pos * videoPlayer.duration;
   }
 });
 fullscreenBtn.addEventListener("click", toggleFullscreen);
@@ -114,26 +117,9 @@ togglePlaylistBtn.addEventListener("click", () => {
 });
 pipBtn.addEventListener("click", togglePictureInPicture);
 
-mediaPlayer.addEventListener("timeupdate", updateProgress);
-mediaPlayer.addEventListener("loadedmetadata", updateDuration);
-mediaPlayer.addEventListener("ended", playNext);
-
-// Drag and drop support
-document.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-});
-
-document.addEventListener("drop", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  const files = Array.from(e.dataTransfer.files);
-  files.forEach((file) => {
-    if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
-      addToPlaylist(file.path);
-    }
-  });
-});
+videoPlayer.addEventListener("timeupdate", updateProgress);
+videoPlayer.addEventListener("loadedmetadata", updateDuration);
+videoPlayer.addEventListener("ended", playNext);
 
 // Functions
 function addToPlaylist(filePath) {
@@ -167,19 +153,19 @@ function playFile(index) {
 
     // If we're playing the next file and it's preloaded, use it
     if (nextPreloadedMedia && nextPreloadedMedia.src === playlistItems[index]) {
-      mediaPlayer.src = nextPreloadedMedia.src;
+      videoPlayer.src = nextPreloadedMedia.src;
       nextPreloadedMedia.remove();
       nextPreloadedMedia = null;
     } else {
-      mediaPlayer.src = playlistItems[index];
+      videoPlayer.src = playlistItems[index];
     }
 
     // Set playback settings before playing
-    mediaPlayer.preload = "auto";
-    mediaPlayer.volume = volumeSlider.value / 100;
+    videoPlayer.preload = "auto";
+    videoPlayer.volume = volumeSlider.value / 100;
 
     // Play immediately and preload next
-    const playPromise = mediaPlayer.play();
+    const playPromise = videoPlayer.play();
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
@@ -195,11 +181,11 @@ function playFile(index) {
 }
 
 function togglePlayPause() {
-  if (mediaPlayer.paused) {
-    mediaPlayer.play();
+  if (videoPlayer.paused) {
+    videoPlayer.play();
     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
   } else {
-    mediaPlayer.pause();
+    videoPlayer.pause();
     playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
   }
 }
@@ -212,8 +198,8 @@ function playPrevious() {
 
 function playNext() {
   if (repeatMode === "one") {
-    mediaPlayer.currentTime = 0;
-    mediaPlayer.play();
+    videoPlayer.currentTime = 0;
+    videoPlayer.play();
     return;
   }
 
@@ -234,7 +220,7 @@ function playNext() {
 }
 
 function handleVolumeChange() {
-  mediaPlayer.volume = volumeSlider.value / 100;
+  videoPlayer.volume = volumeSlider.value / 100;
 }
 
 function handleProgressChange(e) {
@@ -243,7 +229,7 @@ function handleProgressChange(e) {
 
   // Update visual progress immediately
   progressBar.style.width = `${pos * 100}%`;
-  currentTimeDisplay.textContent = formatTime(pos * mediaPlayer.duration);
+  currentTimeDisplay.textContent = formatTime(pos * videoPlayer.duration);
 
   // If not dragging, seek immediately
   if (!isDraggingProgress) {
@@ -251,21 +237,21 @@ function handleProgressChange(e) {
       clearTimeout(seekTimeout);
     }
     seekTimeout = setTimeout(() => {
-      mediaPlayer.currentTime = pos * mediaPlayer.duration;
+      videoPlayer.currentTime = pos * videoPlayer.duration;
     }, 0);
   }
 }
 
 function updateProgress() {
   if (!isDraggingProgress) {
-    const progress = (mediaPlayer.currentTime / mediaPlayer.duration) * 100;
+    const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
     progressBar.style.width = `${progress}%`;
-    currentTimeDisplay.textContent = formatTime(mediaPlayer.currentTime);
+    currentTimeDisplay.textContent = formatTime(videoPlayer.currentTime);
   }
 }
 
 function updateDuration() {
-  durationDisplay.textContent = formatTime(mediaPlayer.duration);
+  durationDisplay.textContent = formatTime(videoPlayer.duration);
 }
 
 function updatePlaylistUI() {
@@ -285,16 +271,16 @@ function toggleFullscreen() {
   if (document.fullscreenElement) {
     document.exitFullscreen();
   } else {
-    mediaPlayer.requestFullscreen();
+    videoPlayer.requestFullscreen();
   }
 }
 
 function toggleMute() {
-  mediaPlayer.muted = !mediaPlayer.muted;
-  muteBtn.innerHTML = mediaPlayer.muted
+  videoPlayer.muted = !videoPlayer.muted;
+  muteBtn.innerHTML = videoPlayer.muted
     ? '<i class="fas fa-volume-mute"></i>'
     : '<i class="fas fa-volume-up"></i>';
-  volumeSlider.value = mediaPlayer.muted ? 0 : mediaPlayer.volume * 100;
+  volumeSlider.value = videoPlayer.muted ? 0 : videoPlayer.volume * 100;
 }
 
 function toggleShuffle() {
@@ -363,7 +349,7 @@ function removeFromPlaylist(index) {
       playFile(Math.min(index, playlistItems.length - 1));
     } else {
       currentIndex = -1;
-      mediaPlayer.src = "";
+      videoPlayer.src = "";
     }
   } else if (currentIndex > index) {
     currentIndex--;
@@ -403,8 +389,8 @@ playlist.addEventListener("click", (e) => {
 });
 
 // Add media loading error handling
-mediaPlayer.addEventListener("error", (e) => {
-  console.error("Media loading error:", mediaPlayer.error);
+videoPlayer.addEventListener("error", (e) => {
+  console.error("Media loading error:", videoPlayer.error);
   // If error occurs, try to play next file
   if (currentIndex < playlistItems.length - 1) {
     playNext();
@@ -412,22 +398,22 @@ mediaPlayer.addEventListener("error", (e) => {
 });
 
 // Optimize playback
-mediaPlayer.addEventListener("loadedmetadata", () => {
+videoPlayer.addEventListener("loadedmetadata", () => {
   // Set video buffer size
-  if (mediaPlayer.duration > 3600) {
+  if (videoPlayer.duration > 3600) {
     // If longer than 1 hour
-    mediaPlayer.preload = "auto";
+    videoPlayer.preload = "auto";
   } else {
-    mediaPlayer.preload = "metadata";
+    videoPlayer.preload = "metadata";
   }
 });
 
 // Add PiP change event listener
-mediaPlayer.addEventListener("enterpictureinpicture", () => {
+videoPlayer.addEventListener("enterpictureinpicture", () => {
   pipBtn.classList.add("active");
 });
 
-mediaPlayer.addEventListener("leavepictureinpicture", () => {
+videoPlayer.addEventListener("leavepictureinpicture", () => {
   pipBtn.classList.remove("active");
 });
 
@@ -436,9 +422,85 @@ async function togglePictureInPicture() {
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture();
     } else if (document.pictureInPictureEnabled) {
-      await mediaPlayer.requestPictureInPicture();
+      await videoPlayer.requestPictureInPicture();
     }
   } catch (error) {
     console.error("PiP error:", error);
   }
 }
+
+// Window Controls
+document.getElementById("minimizeBtn").addEventListener("click", () => {
+  ipcRenderer.send("window-minimize");
+});
+
+document.getElementById("maximizeBtn").addEventListener("click", () => {
+  ipcRenderer.send("window-maximize");
+});
+
+document.getElementById("closeBtn").addEventListener("click", () => {
+  ipcRenderer.send("window-close");
+});
+
+// Update maximize/restore button icon
+const maximizeBtn = document.getElementById("maximizeBtn");
+window.addEventListener("resize", () => {
+  if (
+    window.outerWidth === screen.availWidth &&
+    window.outerHeight === screen.availHeight
+  ) {
+    maximizeBtn.innerHTML = '<i class="fas fa-clone"></i>';
+  } else {
+    maximizeBtn.innerHTML = '<i class="fas fa-square"></i>';
+  }
+});
+
+// Function to toggle welcome screen
+function toggleWelcomeScreen(show) {
+  if (show) {
+    welcomeScreen.classList.remove("hidden");
+    videoPlayer.classList.remove("active");
+  } else {
+    welcomeScreen.classList.add("hidden");
+    videoPlayer.classList.add("active");
+  }
+}
+
+// Show welcome screen initially
+toggleWelcomeScreen(true);
+
+// Handle file selection button click
+selectFileBtn.addEventListener("click", async () => {
+  const result = await ipcRenderer.invoke("select-file");
+  if (result && result.length > 0) {
+    addToPlaylist(result[0]);
+    toggleWelcomeScreen(false);
+  }
+});
+
+// Handle drag and drop
+mediaContainer.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  mediaContainer.classList.add("drag-over");
+});
+
+mediaContainer.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  mediaContainer.classList.remove("drag-over");
+});
+
+mediaContainer.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  mediaContainer.classList.remove("drag-over");
+
+  const files = Array.from(e.dataTransfer.files);
+  files.forEach((file) => {
+    if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
+      addToPlaylist(file.path);
+      toggleWelcomeScreen(false);
+    }
+  });
+});
