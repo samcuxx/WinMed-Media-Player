@@ -5,11 +5,36 @@
     "main": "main.js",
     "scripts": {
         "start": "electron .",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "electron-builder build --win --config.win.signAndEditExecutable=false",
+        "dist": "electron-builder"
     },
-    "author": "",
+    "author": "Samuel",
     "license": "ISC",
-    "dependencies": {
-        "electron": "^28.1.0"
+    "dependencies": {},
+    "devDependencies": {
+        "electron": "^28.1.0",
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.samcuxx.winmed",
+        "productName": "WinMed",
+        "directories": {
+            "output": "dist"
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "icon/icon.png",
+            "signAndEditExecutable": false
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "WinMed Player"
+        }
     }
 }
