@@ -96,8 +96,16 @@ const createWindow = async () => {
     show: false,
     width: 1024,
     height: 728,
-    frame: false, // Remove default window frame
-    icon: getAssetPath('icon.png'),
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    backgroundMaterial: 'acrylic',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#00000000',
+      symbolColor: '#FFFFFF',
+      height: 32,
+    },
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
@@ -106,6 +114,28 @@ const createWindow = async () => {
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
+
+  // Force acrylic effect to render on startup
+  if (mainWindow) {
+    setTimeout(() => {
+      if (!mainWindow) return;
+
+      // Get current bounds
+      const bounds = mainWindow.getBounds();
+
+      // Trigger a small resize to force the effect
+      mainWindow.setBounds({
+        ...bounds,
+        width: bounds.width + 1,
+      });
+
+      // Restore original size
+      setTimeout(() => {
+        if (!mainWindow) return;
+        mainWindow.setBounds(bounds);
+      }, 10);
+    }, 100);
+  }
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
