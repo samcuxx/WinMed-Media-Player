@@ -1,36 +1,33 @@
 {
-  "name": "WinMed",
-  "description": "A foundation for scalable desktop apps",
+  "name": "WinMed Player",
+  "description": "WinMed Player is a desktop application for playing videos and Audio files",
   "keywords": [
-    "electron",
-    "boilerplate",
-    "react",
-    "typescript",
-    "ts",
-    "sass",
-    "webpack",
-    "hot",
-    "reload"
+    "WinMed",
+    "Player",
+    "Video",
+    "Audio",
+    "Media",
+    "Player"
   ],
-  "homepage": "https://github.com/electron-react-boilerplate/electron-react-boilerplate#readme",
+  "homepage": "https://github.com/samcuxx/WinMed-Media-Player",
   "bugs": {
-    "url": "https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues"
+    "url": "https://github.com/samcuxx/WinMed-Media-Player/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "https://github.com/samcuxx/WinMed-Media-Player/issues"
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "samcux",
+    "email": "samcuxx@gmail.com",
+    "url": "https://github.com/samcuxx"
   },
   "contributors": [
     {
-      "name": "Amila Welihinda",
-      "email": "amilajack@gmail.com",
-      "url": "https://github.com/amilajack"
+      "name": "samcux",
+      "email": "samcuxx@gmail.com",
+      "url": "https://github.com/samcuxx"
     }
   ],
   "main": "./.erb/dll/main.bundle.dev.js",
