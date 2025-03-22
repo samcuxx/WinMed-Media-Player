@@ -1,10 +1,10 @@
 {
-  "name": "WinMed Player",
+  "name": "WinMed-Player",
   "version": "0.1.4",
   "description": "A foundation for scalable desktop apps",
   "license": "MIT",
   "author": {
-    "name": "WinMed Player",
+    "name": "WinMed-Player",
     "email": "samcuxx@gmail.com",
     "url": "https://github.com/samcuxx"
   },

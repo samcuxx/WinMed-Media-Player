@@ -1,6 +1,10 @@
 import React from 'react';
 import { TitleBarProps } from '../../types/types';
 import './TitleBar.css';
+import MinimizeIcon from '../Icons/MinimizeIcon';
+import MaximizeIcon from '../Icons/MaximizeIcon';
+import CloseIcon from '../Icons/CloseIcon';
+import WinMedLogo from '../Icons/logo.png';
 
 const TitleBar: React.FC<TitleBarProps> = ({
   onMinimize,
@@ -11,7 +15,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     <div className="title-bar">
       <div className="title-bar-drag-area">
         <div className="app-title">
-          <i className="fas fa-play-circle"></i>
+          <img src={WinMedLogo} alt="WinMed Logo" width={16} height={16} />
           <span>WinMed Player</span>
         </div>
       </div>
@@ -20,22 +24,25 @@ const TitleBar: React.FC<TitleBarProps> = ({
           onClick={onMinimize}
           className="window-control-btn"
           title="Minimize"
+          type="button"
         >
-          <i className="fas fa-minus"></i>
+          <MinimizeIcon size={12} color="#fff" />
         </button>
         <button
           onClick={onMaximize}
           className="window-control-btn"
           title="Maximize"
+          type="button"
         >
-          <i className="fas fa-square"></i>
+          <MaximizeIcon size={12} color="#fff" />
         </button>
         <button
           onClick={onClose}
           className="window-control-btn close-btn"
           title="Close"
+          type="button"
         >
-          <i className="fas fa-times"></i>
+          <CloseIcon size={12} color="#fff" />
         </button>
       </div>
     </div>

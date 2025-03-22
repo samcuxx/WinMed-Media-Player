@@ -1,6 +1,14 @@
 import React, { useRef } from 'react';
 import { ControlsProps } from '../../types/types';
 import './Controls.css';
+import PlayIcon from '../Icons/PlayIcon';
+import PauseIcon from '../Icons/PauseIcon';
+import PreviousIcon from '../Icons/PreviousIcon';
+import NextIcon from '../Icons/NextIcon';
+import ShuffleIcon from '../Icons/ShuffleIcon';
+import RepeatIcon from '../Icons/RepeatIcon';
+import VolumeIcon from '../Icons/VolumeIcon';
+import FullscreenIcon from '../Icons/FullscreenIcon';
 
 const Controls: React.FC<ControlsProps> = ({
   isPlaying,
@@ -82,31 +90,61 @@ const Controls: React.FC<ControlsProps> = ({
 
       <div className="control-buttons">
         <div className="playback-controls">
-          <button onClick={onShuffle} className="btn" title="Shuffle">
-            <i className="fas fa-random"></i>
+          <button
+            onClick={onShuffle}
+            className="btn"
+            title="Shuffle"
+            type="button"
+          >
+            <ShuffleIcon size={20} color="currentColor" />
           </button>
-          <button onClick={onPrevious} className="btn" title="Previous Track">
-            <i className="fas fa-backward"></i>
+          <button
+            onClick={onPrevious}
+            className="btn"
+            title="Previous Track"
+            type="button"
+          >
+            <PreviousIcon size={20} color="currentColor" />
           </button>
-          <button onClick={onPlayPause} className="btn" title="Play/Pause">
-            <i className={`fas fa-${isPlaying ? 'pause' : 'play'}`}></i>
+          <button
+            onClick={onPlayPause}
+            className="btn"
+            title="Play/Pause"
+            type="button"
+          >
+            {isPlaying ? (
+              <PauseIcon size={20} color="currentColor" />
+            ) : (
+              <PlayIcon size={20} color="currentColor" />
+            )}
           </button>
-          <button onClick={onNext} className="btn" title="Next Track">
-            <i className="fas fa-forward"></i>
+          <button
+            onClick={onNext}
+            className="btn"
+            title="Next Track"
+            type="button"
+          >
+            <NextIcon size={20} color="currentColor" />
           </button>
           <button
             onClick={onRepeatModeChange}
             className={`btn ${repeatMode !== 'none' ? repeatMode : ''}`}
             title="Repeat"
+            type="button"
           >
-            <i className="fas fa-redo"></i>
+            <RepeatIcon size={20} color="currentColor" mode={repeatMode} />
           </button>
         </div>
 
         <div className="secondary-controls">
           <div className="volume-control">
-            <button onClick={onMuteToggle} className="btn" title="Mute">
-              <i className={`fas fa-volume-${isMuted ? 'mute' : 'up'}`}></i>
+            <button
+              onClick={onMuteToggle}
+              className="btn"
+              title="Mute"
+              type="button"
+            >
+              <VolumeIcon size={20} color="currentColor" isMuted={isMuted} />
             </button>
             <input
               type="range"
@@ -121,8 +159,13 @@ const Controls: React.FC<ControlsProps> = ({
             onClick={onFullscreenToggle}
             className="btn"
             title="Fullscreen"
+            type="button"
           >
-            <i className={`fas fa-${isFullscreen ? 'compress' : 'expand'}`}></i>
+            <FullscreenIcon
+              size={20}
+              color="currentColor"
+              isFullscreen={isFullscreen}
+            />
           </button>
         </div>
       </div>

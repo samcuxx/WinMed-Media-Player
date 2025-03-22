@@ -1,10 +1,10 @@
 .sidebar {
   width: 300px;
   min-width: 300px;
-  background: linear-gradient(
+    background: linear-gradient(
     to bottom,
     rgba(22, 111, 166, 0.2),
-    rgba(23, 23, 23, 0.2)
+    rgba(22, 111, 166, 0.2)
   );
   overflow-y: auto;
   transition: margin-left 0.3s ease;

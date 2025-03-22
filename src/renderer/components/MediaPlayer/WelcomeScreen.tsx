@@ -1,5 +1,7 @@
 import React from 'react';
 import './WelcomeScreen.css';
+import FilmIcon from '../Icons/FilmIcon';
+import FolderIcon from '../Icons/FolderIcon';
 
 interface WelcomeScreenProps {
   onSelectFiles: () => void;
@@ -36,11 +38,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       onDrop={handleDrop}
     >
       <div className="welcome-content">
-        <i className="fas fa-film welcome-icon"></i>
+        <FilmIcon size={64} color="#1db954" className="welcome-icon" />
         <h2>Welcome to WinMed Player</h2>
         <p>Drop your media files here or click to select</p>
-        <button onClick={onSelectFiles} className="welcome-btn">
-          <i className="fas fa-folder-open"></i>
+        <button onClick={onSelectFiles} className="welcome-btn" type="button">
+          <FolderIcon size={24} color="#fff" />
           Select Files
         </button>
       </div>

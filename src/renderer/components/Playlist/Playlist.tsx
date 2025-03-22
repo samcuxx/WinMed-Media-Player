@@ -1,6 +1,8 @@
 import React from 'react';
 import { PlaylistProps } from '../../types/types';
 import './Playlist.css';
+import ListIcon from '../Icons/ListIcon';
+import AddIcon from '../Icons/AddIcon';
 
 const Playlist: React.FC<PlaylistProps> = ({
   items,
@@ -12,7 +14,7 @@ const Playlist: React.FC<PlaylistProps> = ({
     <div className="sidebar">
       <div className="playlist-header">
         <div className="playlist-title">
-          <i className="fas fa-list-ul"></i>
+          <ListIcon size={20} color="#1db954" />
           <h2>Media Playlist</h2>
         </div>
         <button
@@ -20,8 +22,9 @@ const Playlist: React.FC<PlaylistProps> = ({
           className="add-file-btn"
           title="Add Media File"
           aria-label="Add media file"
+          type="button"
         >
-          <i className="fas fa-plus"></i>
+          <AddIcon size={20} color="#1db954" />
         </button>
       </div>
       <div className="playlist">

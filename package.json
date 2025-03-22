@@ -1,5 +1,5 @@
 {
-  "name": "WinMed Player",
+  "name": "winmed-player",
   "description": "WinMed Player is a desktop application for playing videos and Audio files",
   "keywords": [
     "WinMed",
@@ -173,7 +173,7 @@
     "webpack-merge": "^6.0.1"
   },
   "build": {
-    "productName": "WinMed Player",
+    "productName": "WinMed",
     "appId": "app.samcux.WinMedPlayer",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",

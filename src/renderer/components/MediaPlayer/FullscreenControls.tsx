@@ -1,6 +1,14 @@
 import React, { useRef } from 'react';
 import { ControlsProps } from '../../types/types';
 import './FullscreenControls.css';
+import PlayIcon from '../Icons/PlayIcon';
+import PauseIcon from '../Icons/PauseIcon';
+import PreviousIcon from '../Icons/PreviousIcon';
+import NextIcon from '../Icons/NextIcon';
+import ShuffleIcon from '../Icons/ShuffleIcon';
+import RepeatIcon from '../Icons/RepeatIcon';
+import VolumeIcon from '../Icons/VolumeIcon';
+import FullscreenIcon from '../Icons/FullscreenIcon';
 
 const FullscreenControls: React.FC<ControlsProps> = ({
   isPlaying,
@@ -89,36 +97,45 @@ const FullscreenControls: React.FC<ControlsProps> = ({
             onClick={onShuffle}
             className="fullscreen-btn"
             title="Shuffle"
+            type="button"
           >
-            <i className="fas fa-random"></i>
+            <ShuffleIcon size={24} color="currentColor" />
           </button>
           <button
             onClick={onPrevious}
             className="fullscreen-btn"
             title="Previous Track"
+            type="button"
           >
-            <i className="fas fa-backward"></i>
+            <PreviousIcon size={24} color="currentColor" />
           </button>
           <button
             onClick={onPlayPause}
             className="fullscreen-btn play-pause-btn"
             title="Play/Pause"
+            type="button"
           >
-            <i className={`fas fa-${isPlaying ? 'pause' : 'play'}`}></i>
+            {isPlaying ? (
+              <PauseIcon size={32} color="currentColor" />
+            ) : (
+              <PlayIcon size={32} color="currentColor" />
+            )}
           </button>
           <button
             onClick={onNext}
             className="fullscreen-btn"
             title="Next Track"
+            type="button"
           >
-            <i className="fas fa-forward"></i>
+            <NextIcon size={24} color="currentColor" />
           </button>
           <button
             onClick={onRepeatModeChange}
             className={`fullscreen-btn ${repeatMode !== 'none' ? repeatMode : ''}`}
             title="Repeat"
+            type="button"
           >
-            <i className="fas fa-redo"></i>
+            <RepeatIcon size={24} color="currentColor" mode={repeatMode} />
           </button>
         </div>
 
@@ -128,8 +145,9 @@ const FullscreenControls: React.FC<ControlsProps> = ({
               onClick={onMuteToggle}
               className="fullscreen-btn"
               title="Mute"
+              type="button"
             >
-              <i className={`fas fa-volume-${isMuted ? 'mute' : 'up'}`}></i>
+              <VolumeIcon size={24} color="currentColor" isMuted={isMuted} />
             </button>
             <input
               type="range"
@@ -144,15 +162,25 @@ const FullscreenControls: React.FC<ControlsProps> = ({
             onClick={onPiPToggle}
             className={`fullscreen-btn ${isPiPActive ? 'active' : ''}`}
             title="Picture in Picture"
+            type="button"
           >
-            <i className="fas fa-external-link-alt"></i>
+            <FullscreenIcon
+              size={24}
+              color="currentColor"
+              isFullscreen={false}
+            />
           </button>
           <button
             onClick={onFullscreenToggle}
             className="fullscreen-btn"
             title="Exit Fullscreen"
+            type="button"
           >
-            <i className="fas fa-compress"></i>
+            <FullscreenIcon
+              size={24}
+              color="currentColor"
+              isFullscreen={true}
+            />
           </button>
         </div>
       </div>
