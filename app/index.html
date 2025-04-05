@@ -121,12 +121,35 @@
               <button id="pipBtn" class="btn" title="Picture in Picture">
                 <i class="fas fa-external-link-alt"></i>
               </button>
+              <button id="subtitleBtn" class="btn" title="Subtitles">
+                <i class="fas fa-closed-captioning"></i>
+              </button>
               <button id="fullscreenBtn" class="btn" title="Fullscreen">
                 <i class="fas fa-expand"></i>
               </button>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+    <div id="subtitleMenu" class="subtitle-menu">
+      <div class="subtitle-menu-header">
+        <h3>Subtitles</h3>
+        <button id="closeSubtitleMenu" class="btn" title="Close Menu">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="subtitle-list" id="subtitleList">
+        <div class="subtitle-item">
+          <label>
+            <input type="radio" name="subtitle" value="off" checked /> Off
+          </label>
+        </div>
+      </div>
+      <div class="subtitle-controls">
+        <button id="loadSubtitle" class="btn">
+          <i class="fas fa-file-upload"></i> Load Subtitle File
+        </button>
       </div>
     </div>
     <script src="../src/renderer.js"></script>

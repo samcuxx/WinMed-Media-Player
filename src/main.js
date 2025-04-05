@@ -73,10 +73,10 @@ app.on("window-all-closed", function () {
 });
 
 // Handle file selection dialog
-ipcMain.handle("select-file", async () => {
+ipcMain.handle("select-file", async (event, options = {}) => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ["openFile", "multiSelections"],
-    filters: [
+    properties: ["openFile"],
+    filters: options.filters || [
       {
         name: "Media Files",
         extensions: [

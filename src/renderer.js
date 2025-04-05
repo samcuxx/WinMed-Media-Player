@@ -22,6 +22,11 @@ const container = document.querySelector(".container");
 const welcomeScreen = document.querySelector(".welcome-screen");
 const selectFileBtn = document.getElementById("selectFileBtn");
 const mediaContainer = document.querySelector(".media-container");
+const subtitleBtn = document.getElementById("subtitleBtn");
+const subtitleMenu = document.getElementById("subtitleMenu");
+const closeSubtitleMenu = document.getElementById("closeSubtitleMenu");
+const subtitleList = document.getElementById("subtitleList");
+const loadSubtitleBtn = document.getElementById("loadSubtitle");
 
 // State
 let playlistItems = [];
@@ -31,6 +36,9 @@ let repeatMode = "none"; // none, one, all
 let isDraggingProgress = false;
 let nextPreloadedMedia = null;
 let seekTimeout = null;
+let isSubtitleMenuOpen = false;
+let subtitleTracks = [];
+let currentSubtitleTrack = null;
 
 // Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
@@ -70,6 +78,10 @@ document.addEventListener("keydown", (e) => {
         // Alt + P for Picture-in-Picture
         togglePictureInPicture();
       }
+      break;
+    case "KeyC":
+      e.preventDefault();
+      toggleSubtitles();
       break;
   }
 });
@@ -175,6 +187,14 @@ function playFile(index) {
           console.log("Playback failed:", error);
         });
     }
+
+    // Reset subtitle tracks when changing files
+    while (videoPlayer.textTracks.length > 0) {
+      videoPlayer.removeChild(videoPlayer.textTracks[0]);
+    }
+    currentSubtitleTrack = null;
+    updateSubtitleButtonState();
+    updateSubtitleList();
 
     updatePlaylistUI();
   }
@@ -503,4 +523,178 @@ mediaContainer.addEventListener("drop", (e) => {
       toggleWelcomeScreen(false);
     }
   });
+});
+
+// Subtitle functionality
+subtitleBtn.addEventListener("click", toggleSubtitleMenu);
+closeSubtitleMenu.addEventListener("click", closeSubtitleMenuHandler);
+loadSubtitleBtn.addEventListener("click", loadExternalSubtitle);
+
+// Close subtitle menu when clicking outside
+document.addEventListener("click", (e) => {
+  if (
+    isSubtitleMenuOpen &&
+    !subtitleMenu.contains(e.target) &&
+    !subtitleBtn.contains(e.target)
+  ) {
+    closeSubtitleMenuHandler();
+  }
+});
+
+function toggleSubtitleMenu() {
+  isSubtitleMenuOpen = !isSubtitleMenuOpen;
+  subtitleMenu.classList.toggle("show");
+}
+
+function closeSubtitleMenuHandler() {
+  isSubtitleMenuOpen = false;
+  subtitleMenu.classList.remove("show");
+}
+
+function toggleSubtitles() {
+  const tracks = videoPlayer.textTracks;
+  if (tracks.length > 0) {
+    const track = tracks[0];
+    track.mode = track.mode === "showing" ? "hidden" : "showing";
+    updateSubtitleButtonState();
+  }
+}
+
+function updateSubtitleButtonState() {
+  const tracks = videoPlayer.textTracks;
+  const hasActiveTrack = Array.from(tracks).some(
+    (track) => track.mode === "showing"
+  );
+  subtitleBtn.classList.toggle("active", hasActiveTrack);
+}
+
+async function loadExternalSubtitle() {
+  try {
+    const result = await ipcRenderer.invoke("select-file", {
+      filters: [
+        { name: "Subtitle Files", extensions: ["srt", "vtt", "ass", "ssa"] },
+      ],
+    });
+
+    if (result && result.length > 0) {
+      const filePath = result[0];
+      const fileName = filePath.split(/[/\\]/).pop();
+
+      // Convert SRT to VTT if needed
+      if (filePath.toLowerCase().endsWith(".srt")) {
+        const srt2vtt = require("srt-to-vtt");
+        const fs = require("fs");
+        const stream = fs
+          .createReadStream(filePath)
+          .pipe(srt2vtt())
+          .pipe(fs.createWriteStream(filePath + ".vtt"));
+
+        stream.on("finish", () => {
+          addSubtitleTrack(filePath + ".vtt", fileName);
+        });
+      } else {
+        addSubtitleTrack(filePath, fileName);
+      }
+    }
+  } catch (error) {
+    console.error("Error loading subtitle:", error);
+  }
+}
+
+function addSubtitleTrack(filePath, label) {
+  // Remove existing tracks
+  while (videoPlayer.textTracks.length > 0) {
+    videoPlayer.removeChild(videoPlayer.textTracks[0]);
+  }
+
+  const track = document.createElement("track");
+  track.kind = "subtitles";
+  track.label = label;
+  track.srclang = "en"; // Default to English
+  track.src = filePath;
+  track.default = true;
+
+  videoPlayer.appendChild(track);
+  track.addEventListener("load", () => {
+    track.mode = "showing";
+    updateSubtitleButtonState();
+    updateSubtitleList();
+  });
+}
+
+function updateSubtitleList() {
+  subtitleList.innerHTML = "";
+
+  // Add "Off" option
+  const offItem = document.createElement("div");
+  offItem.className = "subtitle-item";
+  offItem.innerHTML = `
+    <label>
+      <input type="radio" name="subtitle" value="off" ${
+        !currentSubtitleTrack ? "checked" : ""
+      }>
+      Off
+    </label>
+  `;
+  subtitleList.appendChild(offItem);
+
+  // Add available tracks
+  Array.from(videoPlayer.textTracks).forEach((track, index) => {
+    const item = document.createElement("div");
+    item.className = "subtitle-item";
+    item.innerHTML = `
+      <label>
+        <input type="radio" name="subtitle" value="${index}" ${
+      track.mode === "showing" ? "checked" : ""
+    }>
+        ${track.label || `Track ${index + 1}`}
+      </label>
+    `;
+    subtitleList.appendChild(item);
+  });
+
+  // Add event listeners to radio buttons
+  const radioButtons = subtitleList.querySelectorAll('input[type="radio"]');
+  radioButtons.forEach((radio) => {
+    radio.addEventListener("change", (e) => {
+      const tracks = videoPlayer.textTracks;
+      Array.from(tracks).forEach((track) => {
+        track.mode = "hidden";
+      });
+
+      if (e.target.value !== "off" && tracks[e.target.value]) {
+        tracks[e.target.value].mode = "showing";
+        currentSubtitleTrack = tracks[e.target.value];
+      } else {
+        currentSubtitleTrack = null;
+      }
+
+      updateSubtitleButtonState();
+    });
+  });
+}
+
+// Update main.js to handle subtitle file selection
+ipcRenderer.handle("select-file", async (event, options = {}) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openFile"],
+    filters: options.filters || [
+      {
+        name: "Media Files",
+        extensions: [
+          "mp4",
+          "webm",
+          "mkv",
+          "avi",
+          "mov",
+          "mp3",
+          "wav",
+          "ogg",
+          "m4a",
+          "flac",
+        ],
+      },
+    ],
+  });
+  return result.filePaths;
 });
