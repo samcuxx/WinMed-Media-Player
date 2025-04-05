@@ -43,20 +43,27 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 
 ## Installation
 
-1. Clone the repository:
+### Option 1: Using the Installer (Windows)
+
+1.  Download the latest `WinMed-Setup-X.X.X.exe` from the [Releases](https://github.com/samcuxx/WinMed-Media-Player/releases) page (if available).
+2.  Run the downloaded installer and follow the on-screen instructions.
+
+### Option 2: Running from Source
+
+1.  Clone the repository:
 
 ```bash
 git clone https://github.com/samcuxx/WinMed-Media-Player.git
 cd WinMed-Media-Player
 ```
 
-2. Install dependencies:
+2.  Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Start the application:
+3.  Start the application:
 
 ```bash
 npm start
@@ -66,23 +73,36 @@ npm start
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+- Node.js (v14 or higher recommended)
+- npm (v6 or higher recommended)
+- [Inno Setup](https://jrsoftware.org/isinfo.php) (v6 or higher recommended, required for creating the Windows installer)
 
 ### Building from Source
 
-1. Clone the repository
-2. Install dependencies:
+1.  Clone the repository and navigate into the directory.
+2.  Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Run in development mode:
+3.  To package the application (without creating an installer):
 
 ```bash
-npm run dev
+# For Windows
+npm run package:win
+# (Add similar scripts for macOS/Linux if needed)
 ```
+
+    This will create a packaged version of the app in the `release-builds` directory.
+
+4.  To create the Windows installer (requires Inno Setup to be installed and configured):
+
+```bash
+npm run create-installer:win
+```
+
+    This will first run the `package:win` script and then use Inno Setup to create an installer in the `installers` directory.
 
 ### Building for Production
 

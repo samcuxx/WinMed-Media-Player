@@ -39,6 +39,7 @@ Thumbs.db
 /release-builds/
 /installers/
 /packages/
+/installers ; Output installer to an 'installers' subfolder/
 
 # Optional Inno Setup Output (if not using OutputDir)
-# WinMed-Setup-*.exe 
+# WinMed-Setup-*.exe
