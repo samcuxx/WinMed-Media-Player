@@ -1,142 +1,121 @@
-# WinMed Player
+# WinMed - Professional Media Player
 
-<div align="center">
+A modern, feature-rich media player built with Electron. WinMed provides a sleek, user-friendly interface for playing video and audio files with advanced playback controls.
 
-![WinMed Player Logo](assets/logo.png)
+![WinMed Screenshot](screenshot.png)
 
-A modern, elegant media player built with Electron and React, featuring a sleek dark interface and powerful playback capabilities.
+## Features
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Electron](https://img.shields.io/badge/Electron-23.x-47848F.svg)](https://www.electronjs.org/)
-[![React](https://img.shields.io/badge/React-18.x-61DAFB.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-4.x-3178C6.svg)](https://www.typescriptlang.org/)
+- 🎥 Video and Audio Playback
+- 📋 Playlist Management
+- 🔄 Shuffle and Repeat Modes
+- 🖼️ Picture-in-Picture Support
+- ⌨️ Keyboard Shortcuts
+- 🎨 Modern Dark Theme
+- 📱 Responsive Design
+- 🖱️ Drag and Drop Support
 
-</div>
+### Playback Controls
 
-## ✨ Features
+- Play/Pause
+- Previous/Next Track
+- Volume Control with Mute
+- Progress Bar with Seek
+- Fullscreen Mode
+- Picture-in-Picture Mode
 
-### Core Functionality
-- 🎥 Smooth video and audio playback
-- 📋 Dynamic playlist management with drag-and-drop support
-- 🔄 Multiple repeat modes (none, single, all)
-- 🎲 Playlist shuffle functionality
-- 🖼️ Picture-in-Picture support
-- 📺 Fullscreen mode with custom controls
-- 🔊 Advanced volume control with mute option
+### Playlist Features
 
-### User Interface
-- 🌙 Modern dark theme with sleek animations
-- 📱 Responsive and intuitive design
-- 🎨 Custom window controls (minimize, maximize, close)
-- 📊 Progress bar with time preview
-- 📝 Collapsible playlist panel
+- Add Multiple Files
+- Drag and Drop Files
+- Remove Tracks
+- Track Selection
+- Playlist Toggle
 
-### Media Support
-- 🎬 Video Formats: MP4, WebM
-- 🎵 Audio Formats: MP3, WAV, OGG
+### Keyboard Shortcuts
 
-### Controls & Navigation
-- ⌨️ Comprehensive keyboard shortcuts
-- 🖱️ Drag and drop file support
-- ⏭️ Forward/backward seeking
-- ⏯️ Play/pause functionality
-- ⏮️ Previous/next track navigation
+- `Space` - Play/Pause
+- `Left/Right` - Seek -/+ 5 seconds
+- `Up/Down` - Volume Control
+- `F` - Toggle Fullscreen
+- `M` - Toggle Mute
+- `Alt + P` - Toggle Picture-in-Picture
 
-## 🚀 Getting Started
+## Installation
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+1. Clone the repository:
 
-### Installation
-
-1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/winmed-player.git
-cd winmed-player
+git clone https://github.com/samcuxx/WinMed-Media-Player.git
+cd WinMed-Media-Player
 ```
 
-2. Install dependencies
+2. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Start the application
+3. Start the application:
+
 ```bash
 npm start
 ```
 
-### Development
-Run in development mode:
+## Development
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+
+### Building from Source
+
+1. Clone the repository
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Run in development mode:
+
 ```bash
 npm run dev
 ```
 
-### Building
-Build for production:
+### Building for Production
+
 ```bash
 npm run build
 ```
 
-Package for Windows:
-```bash
-npm run package
-```
+## Supported Formats
 
-## ⌨️ Keyboard Shortcuts
+- Video: MP4, WebM
+- Audio: MP3, WAV, OGG
 
-| Action | Shortcut |
-|--------|----------|
-| Play/Pause | `Space` |
-| Seek Forward | `Right Arrow` |
-| Seek Backward | `Left Arrow` |
-| Volume Up | `Up Arrow` |
-| Volume Down | `Down Arrow` |
-| Toggle Fullscreen | `F` |
-| Toggle Mute | `M` |
-| Toggle PiP | `Alt + P` |
-
-## 🛠️ Tech Stack
-
-- [Electron](https://www.electronjs.org/) - Cross-platform desktop apps
-- [React](https://reactjs.org/) - UI framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
-- [Font Awesome](https://fontawesome.com/) - Icons
-- [UUID](https://github.com/uuidjs/uuid) - Unique identifiers
-
-## 📝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create your feature branch
-```bash
-git checkout -b feature/amazing-feature
-```
-3. Commit your changes
-```bash
-git commit -m 'Add some amazing feature'
-```
-4. Push to the branch
-```bash
-git push origin feature/amazing-feature
-```
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- [Electron](https://www.electronjs.org/) for the framework
-- [Font Awesome](https://fontawesome.com/) for the icons
-- All contributors who help improve this project
+- Built with [Electron](https://www.electronjs.org/)
+- Icons by [Font Awesome](https://fontawesome.com/)
 
-## 📞 Support
+## Author
 
-If you like this project, please give it a ⭐️! Feel free to open issues for feature requests or bug reports.
+Samuel - [@samcuxx](https://github.com/samcuxx)
 
----
+## Support
 
-<div align="center">
-Made with ❤️ by SamCux
-</div>
+If you like this project, please give it a ⭐️!
