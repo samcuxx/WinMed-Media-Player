@@ -15,6 +15,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - 📱 Responsive Design
 - 🖱️ Drag and Drop Support
 - 📝 Subtitle Support
+- 🪟 Windows Integration
 
 ### Playback Controls
 
@@ -41,6 +42,13 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - Subtitle visibility toggle
 - Automatic subtitle detection
 
+### Windows Integration
+
+- File associations for media formats
+- Appears in Windows Default Programs
+- "Open with" context menu integration
+- Open media files directly by double-clicking
+
 ### Keyboard Shortcuts
 
 - `Space` - Play/Pause
@@ -59,6 +67,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 
 1.  Download the latest `WinMed-Setup-X.X.X.exe` from the [Releases](https://github.com/samcuxx/WinMed-Media-Player/releases) page (if available).
 2.  Run the downloaded installer and follow the on-screen instructions.
+3.  During installation, you can choose to associate WinMed with video and audio file types.
 
 ### Option 2: Running from Source
 
@@ -116,6 +125,12 @@ npm run create-installer:win
 
     This will first run the `package:win` script and then use Inno Setup to create an installer in the `installers` directory.
 
+5.  To build with Electron Builder (with file associations):
+
+```bash
+npm run dist
+```
+
 ### Building for Production
 
 ```bash
@@ -124,8 +139,8 @@ npm run build
 
 ## Supported Formats
 
-- Video: MP4, WebM
-- Audio: MP3, WAV, OGG
+- Video: MP4, WebM, MKV, AVI, MOV
+- Audio: MP3, WAV, OGG, M4A, FLAC
 - Subtitles: SRT (converted to VTT internally)
 
 ## Contributing

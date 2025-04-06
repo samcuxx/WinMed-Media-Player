@@ -90,14 +90,7 @@ document.addEventListener("keydown", (e) => {
       if (e.altKey) {
         // Alt + P for Picture-in-Picture
         togglePictureInPicture();
-      } else {
-        // P for Previous track
-        playPrevious();
       }
-      break;
-    case "KeyN":
-      // N for Next track
-      playNext();
       break;
     case "KeyC":
       // Added C key for toggling subtitles
@@ -110,10 +103,7 @@ document.addEventListener("keydown", (e) => {
 addFileBtn.addEventListener("click", async () => {
   const filePaths = await ipcRenderer.invoke("select-file");
   if (filePaths && filePaths.length > 0) {
-    filePaths.forEach((path) => {
-      addToPlaylist(path);
-    });
-    toggleWelcomeScreen(false);
+    addToPlaylist(filePaths[0]);
   }
 });
 
@@ -524,9 +514,7 @@ toggleWelcomeScreen(true);
 selectFileBtn.addEventListener("click", async () => {
   const result = await ipcRenderer.invoke("select-file");
   if (result && result.length > 0) {
-    result.forEach((path) => {
-      addToPlaylist(path);
-    });
+    addToPlaylist(result[0]);
     toggleWelcomeScreen(false);
   }
 });
@@ -550,21 +538,12 @@ mediaContainer.addEventListener("drop", (e) => {
   mediaContainer.classList.remove("drag-over");
 
   const files = Array.from(e.dataTransfer.files);
-  const mediaFiles = files.filter(
-    (file) => file.type.startsWith("video/") || file.type.startsWith("audio/")
-  );
-
-  if (mediaFiles.length > 0) {
-    // Add all files to the playlist
-    mediaFiles.forEach((file) => {
+  files.forEach((file) => {
+    if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
       addToPlaylist(file.path);
       toggleWelcomeScreen(false);
-    });
-
-    // If a file is currently playing, play the first dropped file immediately
-    const newIndex = playlistItems.length - mediaFiles.length;
-    playFile(newIndex);
-  }
+    }
+  });
 });
 
 // Subtitle Functions
@@ -1299,3 +1278,16 @@ function updateSubtitlePositioning() {
 
 // Add event listener for fullscreen change
 document.addEventListener("fullscreenchange", updateSubtitlePositioning);
+
+// Handle files opened through Windows file association
+ipcRenderer.on("file-opened", (event, filePath) => {
+  // Add the file to playlist
+  addToPlaylist(filePath);
+
+  // Play the newly added file (it will be the last one in the playlist)
+  const newIndex = playlistItems.length - 1;
+  playFile(newIndex);
+
+  // Ensure welcome screen is hidden
+  toggleWelcomeScreen(false);
+});

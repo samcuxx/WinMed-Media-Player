@@ -1,19 +1,22 @@
 {
     "name": "winmed",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "description": "Professional Video and Audio Player",
     "main": "src/main.js",
     "scripts": {
         "start": "electron .",
         "test": "echo \"Error: no test specified\" && exit 1",
         "package:win": "electron-packager . --overwrite --platform=win32 --arch=x64 --out=release-builds --icon=assets/icons/icon.ico --prune=true --ignore=\"^/release-builds($|/)\" --ignore=\"^/installers($|/)\" --ignore=\"^/packages($|/)\" --ignore=\"\\.iss$\"",
-        "create-installer:win": "rimraf release-builds installers packages && npm run package:win && \"C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe\" installer.iss"
+        "create-installer:win": "rimraf release-builds installers packages && npm run package:win && \"C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe\" installer.iss",
+        "build": "electron-builder build",
+        "dist": "electron-builder --win --x64"
     },
     "author": "SamCux",
     "license": "ISC",
     "devDependencies": {
         "electron": "^28.1.0",
         "electron-packager": "latest",
+        "electron-builder": "^24.9.1",
         "rimraf": "^5.0.0"
     },
     "dependencies": {
@@ -22,5 +25,43 @@
         "@ffmpeg-installer/ffmpeg": "^1.1.0",
         "@ffprobe-installer/ffprobe": "^2.1.2",
         "fluent-ffmpeg": "^2.1.3"
+    },
+    "build": {
+        "appId": "com.samcux.winmed",
+        "productName": "WinMed Media Player",
+        "fileAssociations": [
+            {
+                "ext": [
+                    "mp4",
+                    "webm",
+                    "mkv",
+                    "avi",
+                    "mov"
+                ],
+                "name": "Video",
+                "description": "Video Files",
+                "role": "Viewer",
+                "icon": "assets/icons/video.ico"
+            },
+            {
+                "ext": [
+                    "mp3",
+                    "wav",
+                    "ogg",
+                    "m4a",
+                    "flac"
+                ],
+                "name": "Audio",
+                "description": "Audio Files",
+                "role": "Viewer",
+                "icon": "assets/icons/audio.ico"
+            }
+        ],
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "assets/icons/icon.ico"
+        }
     }
 }

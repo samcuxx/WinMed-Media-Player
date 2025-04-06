@@ -1,6 +1,20 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 
+// Define supported media file types
+const MEDIA_FILE_EXTENSIONS = [
+  "mp4",
+  "webm",
+  "mkv",
+  "avi",
+  "mov",
+  "mp3",
+  "wav",
+  "ogg",
+  "m4a",
+  "flac",
+];
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -60,12 +74,63 @@ function createWindow() {
 
 let mainWindow;
 
+// Handle file opened with app (Windows file association)
+function handleFileOpen(filePath) {
+  if (mainWindow) {
+    mainWindow.webContents.send("file-opened", filePath);
+  }
+}
+
 app.whenReady().then(() => {
   mainWindow = createWindow();
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow();
   });
+
+  // Register as default handler for supported file types
+  if (process.platform === "win32") {
+    app.setUserTasks([
+      {
+        program: process.execPath,
+        arguments: "",
+        iconPath: process.execPath,
+        iconIndex: 0,
+        title: "Open WinMed Media Player",
+        description: "Launch WinMed Media Player",
+      },
+    ]);
+
+    app.setAsDefaultProtocolClient("winmed");
+    MEDIA_FILE_EXTENSIONS.forEach((ext) => {
+      app.setAsDefaultProtocolClient(`winmed-${ext}`);
+    });
+  }
+});
+
+// Handle file open from file explorer when app is already running
+app.on("second-instance", (event, commandLine, workingDirectory) => {
+  // Someone tried to run a second instance, focus our window instead
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+
+    // Check if file path is in the command line arguments
+    const filePath = commandLine.find((arg) => {
+      const ext = path.extname(arg).toLowerCase().substring(1);
+      return MEDIA_FILE_EXTENSIONS.includes(ext);
+    });
+
+    if (filePath) {
+      handleFileOpen(filePath);
+    }
+  }
+});
+
+// Handle file open from file explorer when app is not already running
+app.on("open-file", (event, filePath) => {
+  event.preventDefault();
+  handleFileOpen(filePath);
 });
 
 app.on("window-all-closed", function () {
@@ -79,18 +144,7 @@ ipcMain.handle("select-file", async () => {
     filters: [
       {
         name: "Media Files",
-        extensions: [
-          "mp4",
-          "webm",
-          "mkv",
-          "avi",
-          "mov",
-          "mp3",
-          "wav",
-          "ogg",
-          "m4a",
-          "flac",
-        ],
+        extensions: MEDIA_FILE_EXTENSIONS,
       },
     ],
   });
