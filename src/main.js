@@ -73,10 +73,10 @@ app.on("window-all-closed", function () {
 });
 
 // Handle file selection dialog
-ipcMain.handle("select-file", async (event, options = {}) => {
+ipcMain.handle("select-file", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ["openFile"],
-    filters: options.filters || [
+    properties: ["openFile", "multiSelections"],
+    filters: [
       {
         name: "Media Files",
         extensions: [
@@ -95,4 +95,9 @@ ipcMain.handle("select-file", async (event, options = {}) => {
     ],
   });
   return result.filePaths;
+});
+
+// Add handler for getting temp directory
+ipcMain.handle("get-temp-path", () => {
+  return app.getPath("temp");
 });

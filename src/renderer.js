@@ -1,4 +1,10 @@
 const { ipcRenderer } = require("electron");
+const fs = require("fs");
+const path = require("path");
+const srtToVtt = require("srt-to-vtt");
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 
 // DOM Elements
 const videoPlayer = document.getElementById("videoPlayer");
@@ -24,9 +30,10 @@ const selectFileBtn = document.getElementById("selectFileBtn");
 const mediaContainer = document.querySelector(".media-container");
 const subtitleBtn = document.getElementById("subtitleBtn");
 const subtitleMenu = document.getElementById("subtitleMenu");
-const closeSubtitleMenu = document.getElementById("closeSubtitleMenu");
 const subtitleList = document.getElementById("subtitleList");
-const loadSubtitleBtn = document.getElementById("loadSubtitle");
+const subtitleContainer = document.getElementById("subtitleContainer");
+const subtitleUploadBtn = document.getElementById("subtitleUploadBtn");
+const subtitleUploadInput = document.getElementById("subtitleUploadInput");
 
 // State
 let playlistItems = [];
@@ -36,9 +43,15 @@ let repeatMode = "none"; // none, one, all
 let isDraggingProgress = false;
 let nextPreloadedMedia = null;
 let seekTimeout = null;
-let isSubtitleMenuOpen = false;
-let subtitleTracks = [];
-let currentSubtitleTrack = null;
+let subtitleTracks = []; // Array to store available subtitle tracks
+let currentSubtitleTrack = -1; // Index of current subtitle track (-1 means disabled)
+let subtitlesVisible = true; // Toggle state for subtitle visibility
+let cueMap = new Map(); // Map to store VTTCues for rendering
+let subtitleProcessing = false; // Flag to avoid multiple concurrent subtitle processing
+
+// Set ffmpeg and ffprobe paths
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 // Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
@@ -80,7 +93,7 @@ document.addEventListener("keydown", (e) => {
       }
       break;
     case "KeyC":
-      e.preventDefault();
+      // Added C key for toggling subtitles
       toggleSubtitles();
       break;
   }
@@ -182,19 +195,13 @@ function playFile(index) {
       playPromise
         .then(() => {
           preloadNextMedia();
+          // Scan for subtitles after loading the video
+          scanAndLoadSubtitles(playlistItems[index]);
         })
         .catch((error) => {
           console.log("Playback failed:", error);
         });
     }
-
-    // Reset subtitle tracks when changing files
-    while (videoPlayer.textTracks.length > 0) {
-      videoPlayer.removeChild(videoPlayer.textTracks[0]);
-    }
-    currentSubtitleTrack = null;
-    updateSubtitleButtonState();
-    updateSubtitleList();
 
     updatePlaylistUI();
   }
@@ -289,9 +296,23 @@ function formatTime(seconds) {
 
 function toggleFullscreen() {
   if (document.fullscreenElement) {
-    document.exitFullscreen();
+    document
+      .exitFullscreen()
+      .then(() => {
+        updateSubtitlePositioning();
+      })
+      .catch(() => {
+        // Silent error handling for fullscreen
+      });
   } else {
-    videoPlayer.requestFullscreen();
+    videoPlayer
+      .requestFullscreen()
+      .then(() => {
+        updateSubtitlePositioning();
+      })
+      .catch(() => {
+        // Silent error handling for fullscreen
+      });
   }
 }
 
@@ -525,176 +546,735 @@ mediaContainer.addEventListener("drop", (e) => {
   });
 });
 
-// Subtitle functionality
-subtitleBtn.addEventListener("click", toggleSubtitleMenu);
-closeSubtitleMenu.addEventListener("click", closeSubtitleMenuHandler);
-loadSubtitleBtn.addEventListener("click", loadExternalSubtitle);
+// Subtitle Functions
+function toggleSubtitles() {
+  subtitlesVisible = !subtitlesVisible;
 
-// Close subtitle menu when clicking outside
-document.addEventListener("click", (e) => {
-  if (
-    isSubtitleMenuOpen &&
-    !subtitleMenu.contains(e.target) &&
-    !subtitleBtn.contains(e.target)
-  ) {
-    closeSubtitleMenuHandler();
+  // Update native text tracks based on fullscreen state
+  if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
+    // Find the appropriate text track
+    let activeTrackIndex = -1;
+    for (let i = 0; i < videoPlayer.textTracks.length; i++) {
+      if (
+        videoPlayer.textTracks[i].label ===
+        subtitleTracks[currentSubtitleTrack].language
+      ) {
+        activeTrackIndex = i;
+        break;
+      }
+    }
+
+    if (activeTrackIndex >= 0) {
+      // If in fullscreen, update the native track
+      if (document.fullscreenElement) {
+        videoPlayer.textTracks[activeTrackIndex].mode = subtitlesVisible
+          ? "showing"
+          : "disabled";
+      } else {
+        // Otherwise just update our custom display
+        videoPlayer.textTracks[activeTrackIndex].mode = "hidden";
+      }
+    }
   }
-});
+
+  // Update UI state
+  subtitleBtn.classList.toggle(
+    "active",
+    subtitlesVisible && currentSubtitleTrack >= 0
+  );
+  updateSubtitleDisplay();
+
+  // Store preference in localStorage
+  localStorage.setItem("subtitlesVisible", subtitlesVisible);
+}
+
+function updateSubtitleDisplay() {
+  const hasSubtitles =
+    subtitlesVisible && currentSubtitleTrack >= 0 && subtitleTracks.length > 0;
+
+  // Update container display property directly rather than using CSS display property
+  // for cleaner rendering
+  if (hasSubtitles) {
+    subtitleContainer.style.visibility = "visible";
+    subtitleContainer.style.opacity = "1";
+  } else {
+    subtitleContainer.style.visibility = "hidden";
+    subtitleContainer.style.opacity = "0";
+  }
+
+  // Show active track in subtitle button text
+  const currentTrackLabel = document.getElementById("currentTrackLabel");
+  if (currentTrackLabel) {
+    if (
+      currentSubtitleTrack >= 0 &&
+      currentSubtitleTrack < subtitleTracks.length
+    ) {
+      const trackName = subtitleTracks[currentSubtitleTrack].language;
+      const shortName =
+        trackName.length > 20 ? trackName.substring(0, 20) + "..." : trackName;
+      currentTrackLabel.textContent = shortName;
+    } else {
+      currentTrackLabel.textContent = "Off";
+    }
+  }
+}
 
 function toggleSubtitleMenu() {
-  isSubtitleMenuOpen = !isSubtitleMenuOpen;
   subtitleMenu.classList.toggle("show");
 }
 
-function closeSubtitleMenuHandler() {
-  isSubtitleMenuOpen = false;
-  subtitleMenu.classList.remove("show");
-}
-
-function toggleSubtitles() {
-  const tracks = videoPlayer.textTracks;
-  if (tracks.length > 0) {
-    const track = tracks[0];
-    track.mode = track.mode === "showing" ? "hidden" : "showing";
-    updateSubtitleButtonState();
+// Close the subtitle menu when clicking outside
+document.addEventListener("click", (e) => {
+  if (!subtitleBtn.contains(e.target) && !subtitleMenu.contains(e.target)) {
+    subtitleMenu.classList.remove("show");
   }
-}
+});
 
-function updateSubtitleButtonState() {
-  const tracks = videoPlayer.textTracks;
-  const hasActiveTrack = Array.from(tracks).some(
-    (track) => track.mode === "showing"
-  );
-  subtitleBtn.classList.toggle("active", hasActiveTrack);
-}
+// Function to detect and extract embedded subtitles using ffprobe
+async function detectEmbeddedSubtitles(filePath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) {
+        console.error("Error detecting subtitles:", err);
+        resolve([]);
+        return;
+      }
 
-async function loadExternalSubtitle() {
-  try {
-    const result = await ipcRenderer.invoke("select-file", {
-      filters: [
-        { name: "Subtitle Files", extensions: ["srt", "vtt", "ass", "ssa"] },
-      ],
-    });
+      // Filter subtitle streams
+      const subtitleStreams = metadata.streams.filter(
+        (stream) => stream.codec_type === "subtitle"
+      );
 
-    if (result && result.length > 0) {
-      const filePath = result[0];
-      const fileName = filePath.split(/[/\\]/).pop();
+      // Create a set to track languages we've already processed
+      const languagesProcessed = new Set();
+      const tracks = [];
 
-      // Convert SRT to VTT if needed
-      if (filePath.toLowerCase().endsWith(".srt")) {
-        const srt2vtt = require("srt-to-vtt");
-        const fs = require("fs");
-        const stream = fs
-          .createReadStream(filePath)
-          .pipe(srt2vtt())
-          .pipe(fs.createWriteStream(filePath + ".vtt"));
+      // Process each subtitle stream
+      subtitleStreams.forEach((stream, index) => {
+        // Determine language - use metadata if available or generate a generic name
+        let language = stream.tags?.language || "";
 
-        stream.on("finish", () => {
-          addSubtitleTrack(filePath + ".vtt", fileName);
+        // Handle common language codes
+        if (language === "eng") language = "English";
+        else if (language === "fre" || language === "fra") language = "French";
+        else if (language === "ger" || language === "deu") language = "German";
+        else if (language === "spa") language = "Spanish";
+        else if (language === "ita") language = "Italian";
+        else if (language === "jpn") language = "Japanese";
+        else if (language === "chi" || language === "zho") language = "Chinese";
+        else if (language === "rus") language = "Russian";
+        else if (language === "kor") language = "Korean";
+        else if (language === "ara") language = "Arabic";
+        else if (language === "") language = `Track ${index + 1}`;
+
+        // Create a unique identifier for this language
+        const langKey = language.toLowerCase();
+
+        // Skip if we've already processed this language
+        if (languagesProcessed.has(langKey)) {
+          return;
+        }
+
+        // Add to our processed set
+        languagesProcessed.add(langKey);
+
+        // Create track object
+        tracks.push({
+          id: stream.index,
+          type: "embedded",
+          language: language,
+          source: filePath,
+          streamIndex: stream.index,
+          default: stream.disposition?.default === 1,
+          format: stream.codec_name || "unknown",
         });
-      } else {
-        addSubtitleTrack(filePath, fileName);
+      });
+
+      resolve(tracks);
+    });
+  });
+}
+
+// Function to extract an embedded subtitle track to a temporary VTT file
+async function extractEmbeddedSubtitleToVtt(filePath, streamIndex) {
+  return new Promise(async (resolve, reject) => {
+    const tempDir = path.join(
+      await ipcRenderer.invoke("get-temp-path"),
+      "winmed-subtitles"
+    );
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const outputPath = path.join(tempDir, `subtitle-${Date.now()}.vtt`);
+
+    ffmpeg(filePath)
+      .outputOptions(`-map 0:${streamIndex}`)
+      .outputFormat("webvtt")
+      .on("end", () => resolve(outputPath))
+      .on("error", (err) => {
+        console.error("Error extracting subtitle:", err);
+        reject(err);
+      })
+      .save(outputPath);
+  });
+}
+
+// Function to look for external subtitle files
+function findExternalSubtitles(videoPath) {
+  const videoDir = path.dirname(videoPath);
+  const videoFilename = path.basename(videoPath, path.extname(videoPath));
+
+  const subtitleExts = [".srt", ".vtt", ".ass", ".ssa", ".sub"];
+  let externalTracks = [];
+
+  try {
+    const files = fs.readdirSync(videoDir);
+
+    for (const file of files) {
+      const ext = path.extname(file).toLowerCase();
+      const filename = path.basename(file, ext);
+
+      // Check if this is a subtitle file matching our video filename
+      if (subtitleExts.includes(ext) && filename.startsWith(videoFilename)) {
+        // Extract language info if present (filename.en.srt pattern)
+        const parts = filename.split(".");
+        let language =
+          parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "Unknown";
+
+        if (language === videoFilename) {
+          language = "Default";
+        }
+
+        externalTracks.push({
+          id: `ext-${externalTracks.length}`,
+          type: "external",
+          language: language,
+          source: path.join(videoDir, file),
+          format: ext.substring(1),
+        });
       }
     }
   } catch (error) {
-    console.error("Error loading subtitle:", error);
-  }
-}
-
-function addSubtitleTrack(filePath, label) {
-  // Remove existing tracks
-  while (videoPlayer.textTracks.length > 0) {
-    videoPlayer.removeChild(videoPlayer.textTracks[0]);
+    console.error("Error finding external subtitles:", error);
   }
 
-  const track = document.createElement("track");
-  track.kind = "subtitles";
-  track.label = label;
-  track.srclang = "en"; // Default to English
-  track.src = filePath;
-  track.default = true;
-
-  videoPlayer.appendChild(track);
-  track.addEventListener("load", () => {
-    track.mode = "showing";
-    updateSubtitleButtonState();
-    updateSubtitleList();
-  });
+  return externalTracks;
 }
 
-function updateSubtitleList() {
-  subtitleList.innerHTML = "";
+// Function to convert SRT to VTT if needed
+async function prepareSubtitleTrack(track) {
+  return new Promise(async (resolve, reject) => {
+    if (track.type === "embedded") {
+      extractEmbeddedSubtitleToVtt(track.source, track.streamIndex)
+        .then((vttPath) => {
+          track.vttPath = vttPath;
+          resolve(track);
+        })
+        .catch(reject);
+      return;
+    }
 
-  // Add "Off" option
-  const offItem = document.createElement("div");
-  offItem.className = "subtitle-item";
-  offItem.innerHTML = `
-    <label>
-      <input type="radio" name="subtitle" value="off" ${
-        !currentSubtitleTrack ? "checked" : ""
-      }>
-      Off
-    </label>
-  `;
-  subtitleList.appendChild(offItem);
-
-  // Add available tracks
-  Array.from(videoPlayer.textTracks).forEach((track, index) => {
-    const item = document.createElement("div");
-    item.className = "subtitle-item";
-    item.innerHTML = `
-      <label>
-        <input type="radio" name="subtitle" value="${index}" ${
-      track.mode === "showing" ? "checked" : ""
-    }>
-        ${track.label || `Track ${index + 1}`}
-      </label>
-    `;
-    subtitleList.appendChild(item);
-  });
-
-  // Add event listeners to radio buttons
-  const radioButtons = subtitleList.querySelectorAll('input[type="radio"]');
-  radioButtons.forEach((radio) => {
-    radio.addEventListener("change", (e) => {
-      const tracks = videoPlayer.textTracks;
-      Array.from(tracks).forEach((track) => {
-        track.mode = "hidden";
-      });
-
-      if (e.target.value !== "off" && tracks[e.target.value]) {
-        tracks[e.target.value].mode = "showing";
-        currentSubtitleTrack = tracks[e.target.value];
-      } else {
-        currentSubtitleTrack = null;
+    // For external files
+    if (track.format === "vtt") {
+      track.vttPath = track.source;
+      resolve(track);
+    } else if (track.format === "srt") {
+      // Convert SRT to VTT
+      const tempDir = path.join(
+        await ipcRenderer.invoke("get-temp-path"),
+        "winmed-subtitles"
+      );
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      updateSubtitleButtonState();
-    });
+      const outputPath = path.join(
+        tempDir,
+        `${path.basename(track.source, ".srt")}.vtt`
+      );
+
+      fs.createReadStream(track.source)
+        .pipe(srtToVtt())
+        .pipe(fs.createWriteStream(outputPath))
+        .on("finish", () => {
+          track.vttPath = outputPath;
+          resolve(track);
+        })
+        .on("error", reject);
+    } else {
+      // For other formats, try to convert with ffmpeg
+      const tempDir = path.join(
+        await ipcRenderer.invoke("get-temp-path"),
+        "winmed-subtitles"
+      );
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      const outputPath = path.join(tempDir, `subtitle-${Date.now()}.vtt`);
+
+      ffmpeg(track.source)
+        .outputFormat("webvtt")
+        .on("end", () => {
+          track.vttPath = outputPath;
+          resolve(track);
+        })
+        .on("error", (err) => {
+          console.error("Error converting subtitle:", err);
+          reject(err);
+        })
+        .save(outputPath);
+    }
   });
 }
 
-// Update main.js to handle subtitle file selection
-ipcRenderer.handle("select-file", async (event, options = {}) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ["openFile"],
-    filters: options.filters || [
-      {
-        name: "Media Files",
-        extensions: [
-          "mp4",
-          "webm",
-          "mkv",
-          "avi",
-          "mov",
-          "mp3",
-          "wav",
-          "ogg",
-          "m4a",
-          "flac",
-        ],
-      },
-    ],
+// Function to populate subtitle menu
+function populateSubtitleMenu() {
+  subtitleList.innerHTML = "";
+
+  // Add "Disabled" option
+  const disabledItem = document.createElement("div");
+  disabledItem.className = `subtitle-item ${
+    currentSubtitleTrack === -1 ? "active" : ""
+  }`;
+  disabledItem.textContent = "Disabled";
+  disabledItem.dataset.index = "-1";
+  disabledItem.addEventListener("click", () => {
+    loadSubtitleTrack(-1);
+    toggleSubtitleMenu();
   });
-  return result.filePaths;
+  subtitleList.appendChild(disabledItem);
+
+  // Add all available tracks
+  subtitleTracks.forEach((track, index) => {
+    const item = document.createElement("div");
+    item.className = `subtitle-item ${
+      currentSubtitleTrack === index ? "active" : ""
+    }`;
+    item.textContent = track.language;
+    item.dataset.index = index;
+    item.addEventListener("click", () => {
+      loadSubtitleTrack(index);
+      toggleSubtitleMenu();
+    });
+    subtitleList.appendChild(item);
+  });
+}
+
+// Function to load subtitle track
+async function loadSubtitleTrack(trackIndex) {
+  if (subtitleProcessing) return;
+  subtitleProcessing = true;
+
+  try {
+    // Clear any existing subtitles
+    subtitleContainer.innerHTML = "";
+    cueMap.clear();
+
+    // First, disable all existing text tracks
+    for (let i = 0; i < videoPlayer.textTracks.length; i++) {
+      videoPlayer.textTracks[i].mode = "disabled";
+    }
+
+    // Update current index
+    currentSubtitleTrack = trackIndex;
+
+    if (trackIndex >= 0 && trackIndex < subtitleTracks.length) {
+      const track = subtitleTracks[trackIndex];
+
+      // Prepare the track if needed
+      await prepareSubtitleTrack(track);
+
+      // Create a TextTrack on the video element
+      const textTrack = videoPlayer.addTextTrack(
+        "subtitles",
+        track.language,
+        track.language
+      );
+
+      // Load the VTT file
+      const response = await fetch(track.vttPath);
+      const vttText = await response.text();
+
+      // Parse the VTT
+      const parser = new WebVTT.Parser(window, WebVTT.StringDecoder());
+      const cues = [];
+
+      parser.oncue = (cue) => {
+        cues.push(cue);
+        textTrack.addCue(cue);
+
+        // Store cue in our map by its start time (rounded to 2 decimal places)
+        const key = Math.round(cue.startTime * 100) / 100;
+        if (!cueMap.has(key)) {
+          cueMap.set(key, []);
+        }
+        cueMap.get(key).push(cue);
+      };
+
+      parser.parse(vttText);
+      parser.flush();
+
+      // Set the text track mode based on fullscreen state
+      if (document.fullscreenElement) {
+        textTrack.mode = "showing"; // Use native display in fullscreen
+      } else {
+        textTrack.mode = "hidden"; // Use our custom display in windowed mode
+      }
+
+      // Enable subtitles if we loaded a track successfully
+      subtitlesVisible = true;
+
+      // Store preference
+      localStorage.setItem("currentSubtitleTrack", currentSubtitleTrack);
+      localStorage.setItem("subtitlesVisible", "true");
+    } else {
+      // Subtitles disabled
+      localStorage.setItem("currentSubtitleTrack", -1);
+    }
+
+    // Update UI
+    renderSelectedTrack();
+    updateSubtitleDisplay();
+
+    // Update menu UI to show correct selection
+    const menuItems = subtitleList.querySelectorAll(".subtitle-item");
+    menuItems.forEach((item) => {
+      item.classList.toggle(
+        "active",
+        parseInt(item.dataset.index) === currentSubtitleTrack
+      );
+    });
+
+    // Update subtitle button state
+    subtitleBtn.classList.toggle(
+      "active",
+      subtitlesVisible && currentSubtitleTrack >= 0
+    );
+  } catch (error) {
+    console.error("Error loading subtitle track:", error);
+  } finally {
+    subtitleProcessing = false;
+  }
+}
+
+// Function to render the currently selected track name
+function renderSelectedTrack() {
+  const trackLabel = document.getElementById("currentTrackLabel");
+  if (
+    currentSubtitleTrack >= 0 &&
+    currentSubtitleTrack < subtitleTracks.length
+  ) {
+    trackLabel.textContent = subtitleTracks[currentSubtitleTrack].language;
+  } else {
+    trackLabel.textContent = "Off";
+  }
+}
+
+// Function to handle subtitle upload
+function handleSubtitleUpload(files) {
+  if (!files || !files.length) return;
+
+  const file = files[0];
+  const ext = path.extname(file.path).toLowerCase();
+
+  if ([".srt", ".vtt", ".ass", ".ssa", ".sub"].includes(ext)) {
+    // Create a unique ID for the file to avoid duplicates
+    const fileId = `upload-${Date.now()}`;
+
+    // Check if we already have this file path in the tracks
+    const existingIndex = subtitleTracks.findIndex(
+      (track) =>
+        track.source === file.path || track.language.includes(file.name)
+    );
+
+    if (existingIndex >= 0) {
+      // Use existing track
+      loadSubtitleTrack(existingIndex);
+    } else {
+      // Add new track
+      const track = {
+        id: fileId,
+        type: "external",
+        language: `Uploaded (${file.name})`,
+        source: file.path,
+        format: ext.substring(1),
+      };
+
+      subtitleTracks.push(track);
+      populateSubtitleMenu();
+      loadSubtitleTrack(subtitleTracks.length - 1);
+    }
+  } else {
+    alert(
+      "Invalid subtitle format. Please upload .srt, .vtt, .ass, .ssa, or .sub files."
+    );
+  }
+}
+
+// Render subtitles on video time update
+videoPlayer.addEventListener("timeupdate", () => {
+  if (!subtitlesVisible || currentSubtitleTrack < 0) {
+    return;
+  }
+
+  const currentTime = videoPlayer.currentTime;
+
+  // Only update DOM when needed
+  let hasVisibleCues = false;
+  let cueContent = "";
+
+  // Find all cues that should be displayed
+  for (const [startTime, cues] of cueMap.entries()) {
+    for (const cue of cues) {
+      if (currentTime >= cue.startTime && currentTime <= cue.endTime) {
+        hasVisibleCues = true;
+        cueContent += (cueContent ? "<br>" : "") + cue.text;
+      }
+    }
+  }
+
+  // Update DOM only if content changed
+  if (hasVisibleCues) {
+    if (
+      subtitleContainer.innerHTML !==
+      `<div class="subtitle-text">${cueContent}</div>`
+    ) {
+      subtitleContainer.innerHTML = `<div class="subtitle-text">${cueContent}</div>`;
+    }
+  } else if (subtitleContainer.innerHTML !== "") {
+    subtitleContainer.innerHTML = "";
+  }
 });
+
+// Detect and load subtitles when playing a file
+async function scanAndLoadSubtitles(filePath) {
+  try {
+    // Reset subtitle state
+    subtitleTracks = [];
+    currentSubtitleTrack = -1;
+    cueMap.clear();
+    subtitleContainer.innerHTML = "";
+
+    // Look for embedded subtitles
+    const embeddedTracks = await detectEmbeddedSubtitles(filePath);
+
+    // Look for external subtitle files
+    const externalTracks = findExternalSubtitles(filePath);
+
+    // Deduplicate tracks by language
+    const languageMap = new Map();
+
+    // First add embedded tracks with preference
+    embeddedTracks.forEach((track) => {
+      // Normalize language identifier
+      const langKey = track.language.toLowerCase().trim();
+      // Only add if we don't already have this language, or if it's marked as default
+      if (!languageMap.has(langKey) || track.default) {
+        languageMap.set(langKey, track);
+      }
+    });
+
+    // Then add external tracks if language doesn't exist yet
+    externalTracks.forEach((track) => {
+      const langKey = track.language.toLowerCase().trim();
+      if (!languageMap.has(langKey)) {
+        languageMap.set(langKey, track);
+      }
+    });
+
+    // Convert map to array
+    subtitleTracks = Array.from(languageMap.values());
+
+    // Populate menu with available tracks
+    populateSubtitleMenu();
+
+    // Auto-load first track if available
+    const savedTrackIndex = parseInt(
+      localStorage.getItem("currentSubtitleTrack") || "-1"
+    );
+    const savedSubtitlesVisible =
+      localStorage.getItem("subtitlesVisible") === "true";
+
+    // If we have a saved track index and it's valid, use it
+    if (savedTrackIndex >= 0 && savedTrackIndex < subtitleTracks.length) {
+      subtitlesVisible = savedSubtitlesVisible;
+      loadSubtitleTrack(savedTrackIndex);
+    } else if (subtitleTracks.length > 0) {
+      // Find default track if available
+      const defaultTrackIndex = subtitleTracks.findIndex(
+        (track) => track.default
+      );
+
+      // Otherwise load the first track if available
+      subtitlesVisible = true;
+      loadSubtitleTrack(defaultTrackIndex >= 0 ? defaultTrackIndex : 0);
+    }
+
+    // Update UI
+    subtitleBtn.classList.toggle("active", subtitlesVisible);
+    updateSubtitleDisplay();
+  } catch (error) {
+    console.error("Error scanning for subtitles:", error);
+  }
+}
+
+// Event listeners for subtitle UI
+subtitleBtn.addEventListener("click", toggleSubtitleMenu);
+subtitleUploadBtn.addEventListener("click", () => {
+  subtitleUploadInput.click();
+});
+
+subtitleUploadInput.addEventListener("change", (e) => {
+  handleSubtitleUpload(e.target.files);
+  e.target.value = ""; // Reset for future uploads
+});
+
+// Initialize from localStorage on startup
+document.addEventListener("DOMContentLoaded", () => {
+  subtitlesVisible = localStorage.getItem("subtitlesVisible") === "true";
+  subtitleBtn.classList.toggle("active", subtitlesVisible);
+});
+
+// WebVTT parser (simplified - you might want to use a proper library)
+const WebVTT = {
+  Parser: function (window, decoder) {
+    this.window = window;
+    this.decoder = decoder;
+    this.oncue = function () {};
+    this.onparsingerror = function () {};
+    this.onflush = function () {};
+  },
+  StringDecoder: function () {
+    return {
+      decode: function (data) {
+        return data;
+      },
+    };
+  },
+};
+
+WebVTT.Parser.prototype.parse = function (data) {
+  // Very basic parser - in a real implementation you'd use a library
+  const lines = data.split("\n");
+  let inCue = false;
+  let cue;
+  let tempCue = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Skip WebVTT header
+    if (line.startsWith("WEBVTT")) continue;
+
+    // Timestamp line like "00:00:12.000 --> 00:00:15.000"
+    if (line.includes(" --> ")) {
+      const times = line.split(" --> ");
+      tempCue = {
+        startTime: this.parseTimestamp(times[0]),
+        endTime: this.parseTimestamp(times[1]),
+        text: "",
+      };
+      inCue = true;
+      continue;
+    }
+
+    // Cue text
+    if (inCue && line !== "") {
+      tempCue.text += (tempCue.text ? "\n" : "") + line;
+    }
+
+    // End of cue or empty line after cue
+    if (inCue && (line === "" || i === lines.length - 1) && tempCue.text) {
+      cue = new VTTCue(tempCue.startTime, tempCue.endTime, tempCue.text);
+      this.oncue(cue);
+      tempCue = {};
+      inCue = false;
+    }
+  }
+};
+
+WebVTT.Parser.prototype.flush = function () {
+  this.onflush();
+};
+
+WebVTT.Parser.prototype.parseTimestamp = function (timestamp) {
+  const regex = /(\d+):(\d+):(\d+)\.(\d+)/;
+  const match = regex.exec(timestamp);
+
+  if (match) {
+    return (
+      parseInt(match[1], 10) * 3600 +
+      parseInt(match[2], 10) * 60 +
+      parseInt(match[3], 10) +
+      parseInt(match[4], 10) / 1000
+    );
+  }
+
+  // Also handle MM:SS.mmm format
+  const shortRegex = /(\d+):(\d+)\.(\d+)/;
+  const shortMatch = shortRegex.exec(timestamp);
+
+  if (shortMatch) {
+    return (
+      parseInt(shortMatch[1], 10) * 60 +
+      parseInt(shortMatch[2], 10) +
+      parseInt(shortMatch[3], 10) / 1000
+    );
+  }
+
+  return 0;
+};
+
+// Function to handle fullscreen subtitle positioning
+function updateSubtitlePositioning() {
+  const isFullscreen = !!document.fullscreenElement;
+
+  if (isFullscreen) {
+    subtitleContainer.classList.add("fullscreen");
+
+    // When in fullscreen, use native captions for better integration
+    if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
+      // Find the active text track (usually the last one we added)
+      let activeTrackIndex = -1;
+      for (let i = 0; i < videoPlayer.textTracks.length; i++) {
+        if (
+          videoPlayer.textTracks[i].label ===
+          subtitleTracks[currentSubtitleTrack].language
+        ) {
+          activeTrackIndex = i;
+          break;
+        }
+      }
+
+      // If we found our track, enable it for native display
+      if (activeTrackIndex >= 0 && subtitlesVisible) {
+        videoPlayer.textTracks[activeTrackIndex].mode = "showing";
+        // Hide our custom display in fullscreen since we're using native captions
+        subtitleContainer.style.visibility = "hidden";
+      }
+    }
+  } else {
+    subtitleContainer.classList.remove("fullscreen");
+
+    // When exiting fullscreen, switch back to our custom display
+    if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
+      // Disable all native text tracks
+      for (let i = 0; i < videoPlayer.textTracks.length; i++) {
+        if (videoPlayer.textTracks[i].mode === "showing") {
+          videoPlayer.textTracks[i].mode = "hidden";
+        }
+      }
+
+      // Show our custom display if subtitles are enabled
+      if (subtitlesVisible) {
+        subtitleContainer.style.visibility = "visible";
+        subtitleContainer.style.opacity = "1";
+      }
+    }
+  }
+}
+
+// Add event listener for fullscreen change
+document.addEventListener("fullscreenchange", updateSubtitlePositioning);

@@ -61,6 +61,8 @@
 
         <div class="media-container">
           <video id="videoPlayer"></video>
+          <!-- Subtitle container -->
+          <div id="subtitleContainer" class="subtitle-container"></div>
           <div class="welcome-screen">
             <div class="welcome-content">
               <i class="fas fa-film welcome-icon"></i>
@@ -118,11 +120,34 @@
                   title="Volume Control"
                 />
               </div>
+              <!-- Subtitle control button and menu -->
+              <div class="subtitle-control">
+                <button id="subtitleBtn" class="btn" title="Subtitles">
+                  <i class="fas fa-closed-captioning"></i>
+                </button>
+                <div id="subtitleMenu" class="subtitle-menu">
+                  <div class="subtitle-menu-header">
+                    <span>Subtitles</span>
+                    <span id="currentTrackLabel">Off</span>
+                  </div>
+                  <div id="subtitleList" class="subtitle-list">
+                    <!-- Subtitle tracks will be listed here -->
+                  </div>
+                  <div class="subtitle-menu-footer">
+                    <button id="subtitleUploadBtn" class="subtitle-upload-btn">
+                      <i class="fas fa-upload"></i> Upload Subtitle
+                    </button>
+                    <input
+                      type="file"
+                      id="subtitleUploadInput"
+                      accept=".srt,.vtt,.ass,.ssa,.sub"
+                      style="display: none"
+                    />
+                  </div>
+                </div>
+              </div>
               <button id="pipBtn" class="btn" title="Picture in Picture">
                 <i class="fas fa-external-link-alt"></i>
-              </button>
-              <button id="subtitleBtn" class="btn" title="Subtitles">
-                <i class="fas fa-closed-captioning"></i>
               </button>
               <button id="fullscreenBtn" class="btn" title="Fullscreen">
                 <i class="fas fa-expand"></i>
@@ -130,26 +155,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-    <div id="subtitleMenu" class="subtitle-menu">
-      <div class="subtitle-menu-header">
-        <h3>Subtitles</h3>
-        <button id="closeSubtitleMenu" class="btn" title="Close Menu">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="subtitle-list" id="subtitleList">
-        <div class="subtitle-item">
-          <label>
-            <input type="radio" name="subtitle" value="off" checked /> Off
-          </label>
-        </div>
-      </div>
-      <div class="subtitle-controls">
-        <button id="loadSubtitle" class="btn">
-          <i class="fas fa-file-upload"></i> Load Subtitle File
-        </button>
       </div>
     </div>
     <script src="../src/renderer.js"></script>
