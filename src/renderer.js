@@ -53,7 +53,7 @@ let subtitleProcessing = false; // Flag to avoid multiple concurrent subtitle pr
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
-// Keyboard shortcuts
+// Keyboard shortcuts for WinMed
 document.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return; // Ignore if typing in an input
 
