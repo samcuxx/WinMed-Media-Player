@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.4.0] - 2024-03-22
+
+### Added
+
+- Customized user interface for better user experience
+- Enhanced visual styling and layout improvements
+- New theme customization options
+
+### Changed
+
+- Redesigned player controls for improved usability
+- Updated UI elements for better visual consistency
+- Optimized layout for different screen sizes
+
+### Fixed
+
+- Various UI-related bugs and visual glitches
+- Interface scaling issues on different resolutions
+- Minor performance improvements and optimizations
+
 ## [1.3.0] - 2024-03-21
 
 ### Added
