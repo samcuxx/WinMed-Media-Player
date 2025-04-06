@@ -90,7 +90,14 @@ document.addEventListener("keydown", (e) => {
       if (e.altKey) {
         // Alt + P for Picture-in-Picture
         togglePictureInPicture();
+      } else {
+        // P for Previous track
+        playPrevious();
       }
+      break;
+    case "KeyN":
+      // N for Next track
+      playNext();
       break;
     case "KeyC":
       // Added C key for toggling subtitles
@@ -103,7 +110,10 @@ document.addEventListener("keydown", (e) => {
 addFileBtn.addEventListener("click", async () => {
   const filePaths = await ipcRenderer.invoke("select-file");
   if (filePaths && filePaths.length > 0) {
-    addToPlaylist(filePaths[0]);
+    filePaths.forEach((path) => {
+      addToPlaylist(path);
+    });
+    toggleWelcomeScreen(false);
   }
 });
 
@@ -514,7 +524,9 @@ toggleWelcomeScreen(true);
 selectFileBtn.addEventListener("click", async () => {
   const result = await ipcRenderer.invoke("select-file");
   if (result && result.length > 0) {
-    addToPlaylist(result[0]);
+    result.forEach((path) => {
+      addToPlaylist(path);
+    });
     toggleWelcomeScreen(false);
   }
 });
@@ -538,12 +550,21 @@ mediaContainer.addEventListener("drop", (e) => {
   mediaContainer.classList.remove("drag-over");
 
   const files = Array.from(e.dataTransfer.files);
-  files.forEach((file) => {
-    if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
+  const mediaFiles = files.filter(
+    (file) => file.type.startsWith("video/") || file.type.startsWith("audio/")
+  );
+
+  if (mediaFiles.length > 0) {
+    // Add all files to the playlist
+    mediaFiles.forEach((file) => {
       addToPlaylist(file.path);
       toggleWelcomeScreen(false);
-    }
-  });
+    });
+
+    // If a file is currently playing, play the first dropped file immediately
+    const newIndex = playlistItems.length - mediaFiles.length;
+    playFile(newIndex);
+  }
 });
 
 // Subtitle Functions

@@ -28,8 +28,8 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 
 ### Playlist Features
 
-- Add Multiple Files
-- Drag and Drop Files
+- Add Multiple Files at Once
+- Smart Drag and Drop (plays new files immediately)
 - Remove Tracks
 - Track Selection
 - Playlist Toggle
@@ -50,6 +50,8 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - `M` - Toggle Mute
 - `Alt + P` - Toggle Picture-in-Picture
 - `C` - Toggle Subtitles
+- `N` - Next Track
+- `P` - Previous Track
 
 ## Installation
 
