@@ -2,7 +2,7 @@
 ; -- Inno Setup script for WinMed Player --
 
 #define MyAppName "WinMed"
-#define MyAppVersion "1.1.0" 
+#define MyAppVersion "1.0.2" 
 #define MyAppPublisher "Samuel" 
 #define MyAppExeName "winmed.exe"
 #define MyAppSourcePath "release-builds\\winmed-win32-x64"
