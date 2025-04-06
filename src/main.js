@@ -133,6 +133,23 @@ function createWindow() {
     }
   });
 
+  // Add window state change listeners
+  mainWindow.on("maximize", () => {
+    mainWindow.webContents.send("window-state-changed", true);
+  });
+
+  mainWindow.on("unmaximize", () => {
+    mainWindow.webContents.send("window-state-changed", false);
+  });
+
+  // Send initial window state
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.send(
+      "window-state-changed",
+      mainWindow.isMaximized()
+    );
+  });
+
   ipcMain.on("window-close", () => {
     mainWindow.close();
   });

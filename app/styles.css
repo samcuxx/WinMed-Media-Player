@@ -541,51 +541,51 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .window-control-btn {
-  width: 12px;
-  height: 12px;
+  width: 32px;
+  height: 32px;
   border: none;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  background: transparent;
+  border-radius: 50px;
 }
 
-.window-control-btn:hover::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.15;
+.window-control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.window-control-btn i {
-  font-size: 8px;
-  opacity: 0;
+.window-control-btn img {
+  width: 17px;
+  height: 17px;
   transition: opacity 0.2s ease;
-  color: rgba(0, 0, 0, 0.7);
+  opacity: 0.8;
 }
 
-.window-control-btn:hover i {
+.window-control-btn:hover img {
   opacity: 1;
 }
 
-#closeBtn {
+#closeBtn:hover {
   background: #ff5f57;
-  color: #ff5f57;
 }
 
-#minimizeBtn {
+
+#minimizeBtn:hover {
   background: #febc2e;
-  color: #febc2e;
 }
 
-#maximizeBtn {
+#maximizeBtn:hover {
   background: #28c840;
-  color: #28c840;
+}
+
+#closeBtn svg,
+#minimizeBtn svg,
+#maximizeBtn svg {
+  fill: #fff;
 }
 
 .welcome-screen {

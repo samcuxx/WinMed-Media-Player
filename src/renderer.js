@@ -678,14 +678,18 @@ document.getElementById("closeBtn").addEventListener("click", () => {
 
 // Update maximize/restore button icon
 const maximizeBtn = document.getElementById("maximizeBtn");
-window.addEventListener("resize", () => {
-  if (
-    window.outerWidth === screen.availWidth &&
-    window.outerHeight === screen.availHeight
-  ) {
-    maximizeBtn.innerHTML = '<i class="fas fa-clone"></i>';
+
+// Listen for window state changes from main process
+ipcRenderer.on("window-state-changed", (event, isMaximized) => {
+  const imgElement = maximizeBtn.querySelector("img");
+  if (isMaximized) {
+    imgElement.src = "../assets/icons/svg/title/restore.svg";
+    imgElement.alt = "Restore";
+    maximizeBtn.title = "Restore";
   } else {
-    maximizeBtn.innerHTML = '<i class="fas fa-square"></i>';
+    imgElement.src = "../assets/icons/svg/title/maximize.svg";
+    imgElement.alt = "Maximize";
+    maximizeBtn.title = "Maximize";
   }
 });
 
