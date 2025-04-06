@@ -1,8 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs");
 
-// Define supported media file types
-const MEDIA_FILE_EXTENSIONS = [
+// Define supported file types
+const supportedFileTypes = [
   "mp4",
   "webm",
   "mkv",
@@ -14,6 +15,74 @@ const MEDIA_FILE_EXTENSIONS = [
   "m4a",
   "flac",
 ];
+
+// Set application as default handler for supported file types
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("winmed");
+  }
+} else {
+  app.setAsDefaultProtocolClient("winmed");
+}
+
+// Check if we're launching with a protocol handler or file association
+// We need to handle this case separately from normal launches
+const isFileAssociationLaunch =
+  process.argv.length > 1 &&
+  !process.argv[1].startsWith("--") &&
+  !process.argv[1].startsWith("-") &&
+  process.argv[1] !== "." &&
+  process.platform === "win32";
+
+// Register file type associations on Windows
+if (process.platform === "win32") {
+  app.setUserTasks([
+    {
+      program: process.execPath,
+      arguments: "",
+      iconPath: process.execPath,
+      iconIndex: 0,
+      title: "New WinMed Player",
+      description: "Open WinMed Media Player",
+    },
+  ]);
+}
+
+// Log all command line arguments at startup for debugging
+console.log("Application starting with arguments:", process.argv);
+
+// Handle file open events (Windows)
+if (isFileAssociationLaunch) {
+  // Check if a file path was passed as an argument (from file association click)
+  const filePath = process.argv[1];
+  console.log("Checking command line argument path:", filePath);
+
+  // Check if path exists AND is a file (not a directory) AND has valid extension
+  if (fs.existsSync(filePath)) {
+    console.log("Path exists, checking if it is a file...");
+    const stats = fs.statSync(filePath);
+    if (stats.isFile()) {
+      console.log("Path is a file, checking extension...");
+      const ext = path.extname(filePath).toLowerCase().substring(1); // Remove dot
+      if (supportedFileTypes.includes(ext)) {
+        // Store absolute path normalized for better cross-platform compatibility
+        global.startupFile = path.resolve(filePath);
+        console.log("Startup file detected:", global.startupFile);
+      } else {
+        console.log("File has unsupported extension:", filePath);
+      }
+    } else {
+      console.log(
+        "Path exists but is not a file:",
+        filePath,
+        "isDirectory:",
+        stats.isDirectory()
+      );
+    }
+  } else {
+    console.log("Path does not exist:", filePath);
+  }
+}
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -74,64 +143,112 @@ function createWindow() {
 
 let mainWindow;
 
-// Handle file opened with app (Windows file association)
-function handleFileOpen(filePath) {
-  if (mainWindow) {
-    mainWindow.webContents.send("file-opened", filePath);
-  }
-}
-
 app.whenReady().then(() => {
   mainWindow = createWindow();
+
+  // Handle file open events from protocol (winmed://)
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    console.log("Protocol handler received URL:", url);
+
+    const filePath = url.replace("winmed://", "");
+    console.log("Protocol handler extracted file path:", filePath);
+
+    // Check if path exists AND is a file (not a directory) AND has valid extension
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath);
+      if (stats.isFile()) {
+        const ext = path.extname(filePath).toLowerCase().substring(1); // Remove dot
+        if (supportedFileTypes.includes(ext)) {
+          const resolvedPath = path.resolve(filePath);
+          console.log("Protocol handler opening file:", resolvedPath);
+          mainWindow.webContents.send("open-file", resolvedPath);
+        } else {
+          console.log(
+            "Protocol handler: File has unsupported extension:",
+            filePath
+          );
+        }
+      } else {
+        console.log(
+          "Protocol handler: Path exists but is not a file:",
+          filePath
+        );
+      }
+    } else {
+      console.log("Protocol handler: Path does not exist:", filePath);
+    }
+  });
+
+  // Pass startup file to renderer if it exists
+  if (global.startupFile) {
+    mainWindow.webContents.on("did-finish-load", () => {
+      console.log("Sending startup file to renderer:", global.startupFile);
+      mainWindow.webContents.send("open-file", global.startupFile);
+    });
+  }
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow();
   });
-
-  // Register as default handler for supported file types
-  if (process.platform === "win32") {
-    app.setUserTasks([
-      {
-        program: process.execPath,
-        arguments: "",
-        iconPath: process.execPath,
-        iconIndex: 0,
-        title: "Open WinMed Media Player",
-        description: "Launch WinMed Media Player",
-      },
-    ]);
-
-    app.setAsDefaultProtocolClient("winmed");
-    MEDIA_FILE_EXTENSIONS.forEach((ext) => {
-      app.setAsDefaultProtocolClient(`winmed-${ext}`);
-    });
-  }
 });
 
-// Handle file open from file explorer when app is already running
+// Handle opening files from file explorer
 app.on("second-instance", (event, commandLine, workingDirectory) => {
   // Someone tried to run a second instance, focus our window instead
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
 
-    // Check if file path is in the command line arguments
-    const filePath = commandLine.find((arg) => {
-      const ext = path.extname(arg).toLowerCase().substring(1);
-      return MEDIA_FILE_EXTENSIONS.includes(ext);
-    });
+    console.log("Second instance with command line:", commandLine);
 
-    if (filePath) {
-      handleFileOpen(filePath);
+    // Check if file path is provided in command line args
+    if (commandLine.length > 1) {
+      // Use the first non-flag argument as potential file path
+      const filePath = commandLine.find(
+        (arg) =>
+          !arg.startsWith("-") &&
+          !arg.startsWith("--") &&
+          arg !== process.execPath
+      );
+
+      if (filePath) {
+        console.log("Second instance checking file path:", filePath);
+
+        // Check if path exists AND is a file (not a directory) AND has valid extension
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          if (stats.isFile()) {
+            const ext = path.extname(filePath).toLowerCase().substring(1); // Remove dot
+            if (supportedFileTypes.includes(ext)) {
+              const resolvedPath = path.resolve(filePath);
+              console.log("Second instance file path:", resolvedPath);
+              mainWindow.webContents.send("open-file", resolvedPath);
+            } else {
+              console.log(
+                "Second instance: File has unsupported extension:",
+                filePath
+              );
+            }
+          } else {
+            console.log(
+              "Second instance: Path exists but is not a file:",
+              filePath
+            );
+          }
+        } else {
+          console.log("Second instance: Path does not exist:", filePath);
+        }
+      }
     }
   }
 });
 
-// Handle file open from file explorer when app is not already running
-app.on("open-file", (event, filePath) => {
-  event.preventDefault();
-  handleFileOpen(filePath);
-});
+// Ensure single instance
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+}
 
 app.on("window-all-closed", function () {
   if (process.platform !== "darwin") app.quit();
@@ -144,7 +261,7 @@ ipcMain.handle("select-file", async () => {
     filters: [
       {
         name: "Media Files",
-        extensions: MEDIA_FILE_EXTENSIONS,
+        extensions: supportedFileTypes,
       },
     ],
   });
@@ -154,4 +271,9 @@ ipcMain.handle("select-file", async () => {
 // Add handler for getting temp directory
 ipcMain.handle("get-temp-path", () => {
   return app.getPath("temp");
+});
+
+// Add handler for opening files from file associations
+ipcMain.handle("get-startup-file", () => {
+  return global.startupFile || null;
 });

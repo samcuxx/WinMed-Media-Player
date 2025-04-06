@@ -15,7 +15,6 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - 📱 Responsive Design
 - 🖱️ Drag and Drop Support
 - 📝 Subtitle Support
-- 🪟 Windows Integration
 
 ### Playback Controls
 
@@ -42,13 +41,6 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - Subtitle visibility toggle
 - Automatic subtitle detection
 
-### Windows Integration
-
-- File associations for media formats
-- Appears in Windows Default Programs
-- "Open with" context menu integration
-- Open media files directly by double-clicking
-
 ### Keyboard Shortcuts
 
 - `Space` - Play/Pause
@@ -67,7 +59,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 
 1.  Download the latest `WinMed-Setup-X.X.X.exe` from the [Releases](https://github.com/samcuxx/WinMed-Media-Player/releases) page (if available).
 2.  Run the downloaded installer and follow the on-screen instructions.
-3.  During installation, you can choose to associate WinMed with video and audio file types.
+3.  During installation, you can choose to associate WinMed with common media file types.
 
 ### Option 2: Running from Source
 
@@ -89,6 +81,24 @@ npm install
 ```bash
 npm start
 ```
+
+### Registering as a Media Player in Windows
+
+To register WinMed as a media player and associate it with media file types:
+
+1.  First, package the application:
+
+```bash
+npm run package:win
+```
+
+2.  Then register the file associations:
+
+```bash
+npm run register-filetypes
+```
+
+This will register WinMed with Windows as a media player application and add it to the "Open with" menu for supported file types. You can then set it as the default application for specific media formats through Windows Settings.
 
 ## Development
 
@@ -125,12 +135,6 @@ npm run create-installer:win
 
     This will first run the `package:win` script and then use Inno Setup to create an installer in the `installers` directory.
 
-5.  To build with Electron Builder (with file associations):
-
-```bash
-npm run dist
-```
-
 ### Building for Production
 
 ```bash
@@ -139,8 +143,8 @@ npm run build
 
 ## Supported Formats
 
-- Video: MP4, WebM, MKV, AVI, MOV
-- Audio: MP3, WAV, OGG, M4A, FLAC
+- Video: MP4, WebM
+- Audio: MP3, WAV, OGG
 - Subtitles: SRT (converted to VTT internally)
 
 ## Contributing

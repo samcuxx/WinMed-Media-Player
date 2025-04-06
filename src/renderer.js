@@ -53,6 +53,83 @@ let subtitleProcessing = false; // Flag to avoid multiple concurrent subtitle pr
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
+// Helper function to check if a file is a valid media file
+function isValidMediaFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.error("File does not exist:", filePath);
+    return false;
+  }
+
+  // Check if it's a file, not a directory
+  if (!fs.statSync(filePath).isFile()) {
+    console.error("Path is not a file:", filePath);
+    return false;
+  }
+
+  // Check if it has a supported file extension
+  const ext = path.extname(filePath).toLowerCase().substring(1); // Remove the dot
+  const supportedExts = [
+    "mp4",
+    "webm",
+    "mkv",
+    "avi",
+    "mov",
+    "mp3",
+    "wav",
+    "ogg",
+    "m4a",
+    "flac",
+  ];
+
+  if (!supportedExts.includes(ext)) {
+    console.error("Unsupported file extension:", ext);
+    return false;
+  }
+
+  return true;
+}
+
+// Handle files opened directly from file explorer or file associations
+ipcRenderer.on("open-file", (event, filePath) => {
+  console.log("Received file to open:", filePath);
+
+  // Normalize the file path
+  let normalizedPath = filePath;
+
+  // Handle file:// protocol if present
+  if (normalizedPath.startsWith("file://")) {
+    normalizedPath = decodeURI(normalizedPath.replace(/^file:\/\/\/?/, ""));
+  }
+
+  // Fix Windows path format if needed
+  if (process.platform === "win32" && !normalizedPath.match(/^[A-Za-z]:/)) {
+    // If missing drive letter, assume C: drive
+    normalizedPath = "C:" + normalizedPath;
+  }
+
+  // Validate file exists and is a valid media file
+  if (isValidMediaFile(normalizedPath)) {
+    console.log("Opening file:", normalizedPath);
+    addToPlaylist(normalizedPath);
+    toggleWelcomeScreen(false);
+    // Play the file immediately
+    const index = playlistItems.length - 1;
+    playFile(index);
+  } else {
+    console.error("Not a valid media file:", normalizedPath);
+  }
+});
+
+// Check for any startup files when the app loads
+document.addEventListener("DOMContentLoaded", async () => {
+  const startupFile = await ipcRenderer.invoke("get-startup-file");
+  if (startupFile) {
+    addToPlaylist(startupFile);
+    toggleWelcomeScreen(false);
+    playFile(0);
+  }
+});
+
 // Keyboard shortcuts for WinMed
 document.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return; // Ignore if typing in an input
@@ -90,7 +167,14 @@ document.addEventListener("keydown", (e) => {
       if (e.altKey) {
         // Alt + P for Picture-in-Picture
         togglePictureInPicture();
+      } else {
+        // P for Previous track
+        playPrevious();
       }
+      break;
+    case "KeyN":
+      // N for Next track
+      playNext();
       break;
     case "KeyC":
       // Added C key for toggling subtitles
@@ -103,7 +187,16 @@ document.addEventListener("keydown", (e) => {
 addFileBtn.addEventListener("click", async () => {
   const filePaths = await ipcRenderer.invoke("select-file");
   if (filePaths && filePaths.length > 0) {
-    addToPlaylist(filePaths[0]);
+    // Filter out invalid files
+    const validFiles = filePaths.filter((path) => isValidMediaFile(path));
+
+    validFiles.forEach((path) => {
+      addToPlaylist(path);
+    });
+
+    if (validFiles.length > 0) {
+      toggleWelcomeScreen(false);
+    }
   }
 });
 
@@ -148,6 +241,13 @@ videoPlayer.addEventListener("ended", playNext);
 
 // Functions
 function addToPlaylist(filePath) {
+  console.log("Adding to playlist:", filePath);
+
+  // Verify file is a valid media file
+  if (!isValidMediaFile(filePath)) {
+    return;
+  }
+
   const fileName = filePath.split(/[/\\]/).pop();
   const index = playlistItems.length;
   playlistItems.push(filePath);
@@ -174,36 +274,63 @@ function addToPlaylist(filePath) {
 
 function playFile(index) {
   if (index >= 0 && index < playlistItems.length) {
-    currentIndex = index;
+    try {
+      currentIndex = index;
+      const filePath = playlistItems[index];
 
-    // If we're playing the next file and it's preloaded, use it
-    if (nextPreloadedMedia && nextPreloadedMedia.src === playlistItems[index]) {
-      videoPlayer.src = nextPreloadedMedia.src;
-      nextPreloadedMedia.remove();
-      nextPreloadedMedia = null;
-    } else {
-      videoPlayer.src = playlistItems[index];
+      // Create a proper file URL that handles spaces and special characters
+      // Use URL constructor for proper encoding
+      let fileUrl;
+      try {
+        // For Windows paths, ensure they start with /
+        if (process.platform === "win32") {
+          const formattedPath = filePath.replace(/\\/g, "/");
+          fileUrl = new URL(`file:///${formattedPath}`).href;
+        } else {
+          fileUrl = new URL(`file://${filePath}`).href;
+        }
+      } catch (error) {
+        // Fallback for compatibility
+        console.warn("URL constructor failed, using manual encoding");
+        fileUrl =
+          "file://" +
+          (filePath.startsWith("/") ? "" : "/") +
+          filePath.replace(/ /g, "%20");
+      }
+
+      console.log("Playing file:", fileUrl);
+
+      // If we're playing the next file and it's preloaded, use it
+      if (nextPreloadedMedia && nextPreloadedMedia.src === fileUrl) {
+        videoPlayer.src = nextPreloadedMedia.src;
+        nextPreloadedMedia.remove();
+        nextPreloadedMedia = null;
+      } else {
+        videoPlayer.src = fileUrl;
+      }
+
+      // Set playback settings before playing
+      videoPlayer.preload = "auto";
+      videoPlayer.volume = volumeSlider.value / 100;
+
+      // Play immediately and preload next
+      const playPromise = videoPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            preloadNextMedia();
+            // Scan for subtitles after loading the video
+            scanAndLoadSubtitles(filePath);
+          })
+          .catch((error) => {
+            console.log("Playback failed:", error);
+          });
+      }
+
+      updatePlaylistUI();
+    } catch (error) {
+      console.error("Error playing file:", error);
     }
-
-    // Set playback settings before playing
-    videoPlayer.preload = "auto";
-    videoPlayer.volume = volumeSlider.value / 100;
-
-    // Play immediately and preload next
-    const playPromise = videoPlayer.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          preloadNextMedia();
-          // Scan for subtitles after loading the video
-          scanAndLoadSubtitles(playlistItems[index]);
-        })
-        .catch((error) => {
-          console.log("Playback failed:", error);
-        });
-    }
-
-    updatePlaylistUI();
   }
 }
 
@@ -402,23 +529,48 @@ function removeFromPlaylist(index) {
 function preloadNextMedia() {
   if (playlistItems.length <= 1) return;
 
-  let nextIndex;
-  if (isShuffleMode) {
-    do {
-      nextIndex = Math.floor(Math.random() * playlistItems.length);
-    } while (nextIndex === currentIndex);
-  } else {
-    nextIndex = (currentIndex + 1) % playlistItems.length;
-  }
+  try {
+    let nextIndex;
+    if (isShuffleMode) {
+      do {
+        nextIndex = Math.floor(Math.random() * playlistItems.length);
+      } while (nextIndex === currentIndex);
+    } else {
+      nextIndex = (currentIndex + 1) % playlistItems.length;
+    }
 
-  if (nextPreloadedMedia) {
-    nextPreloadedMedia.remove();
-  }
+    if (nextPreloadedMedia) {
+      nextPreloadedMedia.remove();
+    }
 
-  nextPreloadedMedia = document.createElement("video");
-  nextPreloadedMedia.preload = "auto";
-  nextPreloadedMedia.src = playlistItems[nextIndex];
-  nextPreloadedMedia.load();
+    const filePath = playlistItems[nextIndex];
+
+    // Create a proper file URL that handles spaces and special characters
+    let fileUrl;
+    try {
+      // For Windows paths, ensure they start with /
+      if (process.platform === "win32") {
+        const formattedPath = filePath.replace(/\\/g, "/");
+        fileUrl = new URL(`file:///${formattedPath}`).href;
+      } else {
+        fileUrl = new URL(`file://${filePath}`).href;
+      }
+    } catch (error) {
+      // Fallback for compatibility
+      console.warn("URL constructor failed, using manual encoding");
+      fileUrl =
+        "file://" +
+        (filePath.startsWith("/") ? "" : "/") +
+        filePath.replace(/ /g, "%20");
+    }
+
+    nextPreloadedMedia = document.createElement("video");
+    nextPreloadedMedia.preload = "auto";
+    nextPreloadedMedia.src = fileUrl;
+    nextPreloadedMedia.load();
+  } catch (error) {
+    console.error("Error preloading next file:", error);
+  }
 }
 
 // Use event delegation for playlist clicks
@@ -514,8 +666,16 @@ toggleWelcomeScreen(true);
 selectFileBtn.addEventListener("click", async () => {
   const result = await ipcRenderer.invoke("select-file");
   if (result && result.length > 0) {
-    addToPlaylist(result[0]);
-    toggleWelcomeScreen(false);
+    // Filter out invalid files
+    const validFiles = result.filter((path) => isValidMediaFile(path));
+
+    validFiles.forEach((path) => {
+      addToPlaylist(path);
+    });
+
+    if (validFiles.length > 0) {
+      toggleWelcomeScreen(false);
+    }
   }
 });
 
@@ -538,12 +698,32 @@ mediaContainer.addEventListener("drop", (e) => {
   mediaContainer.classList.remove("drag-over");
 
   const files = Array.from(e.dataTransfer.files);
-  files.forEach((file) => {
-    if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
+  const mediaFiles = files.filter((file) => {
+    // First check MIME type as a quick filter
+    const isMediaType =
+      file.type.startsWith("video/") || file.type.startsWith("audio/");
+    // Also verify it's a valid media file with our helper function
+    return isMediaType && isValidMediaFile(file.path);
+  });
+
+  if (mediaFiles.length > 0) {
+    console.log(`Processing ${mediaFiles.length} dropped media files`);
+
+    // Add all files to the playlist
+    mediaFiles.forEach((file) => {
+      console.log("Adding dropped file:", file.path);
       addToPlaylist(file.path);
       toggleWelcomeScreen(false);
+    });
+
+    // If a file is currently playing, play the first dropped file immediately
+    const newIndex = playlistItems.length - mediaFiles.length;
+    if (newIndex >= 0 && newIndex < playlistItems.length) {
+      playFile(newIndex);
     }
-  });
+  } else {
+    console.log("No valid media files were dropped");
+  }
 });
 
 // Subtitle Functions
@@ -1278,16 +1458,3 @@ function updateSubtitlePositioning() {
 
 // Add event listener for fullscreen change
 document.addEventListener("fullscreenchange", updateSubtitlePositioning);
-
-// Handle files opened through Windows file association
-ipcRenderer.on("file-opened", (event, filePath) => {
-  // Add the file to playlist
-  addToPlaylist(filePath);
-
-  // Play the newly added file (it will be the last one in the playlist)
-  const newIndex = playlistItems.length - 1;
-  playFile(newIndex);
-
-  // Ensure welcome screen is hidden
-  toggleWelcomeScreen(false);
-});
