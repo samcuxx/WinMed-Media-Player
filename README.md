@@ -14,6 +14,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - 🎨 Modern Dark Theme
 - 📱 Responsive Design
 - 🖱️ Drag and Drop Support
+- 📝 Subtitle Support
 
 ### Playback Controls
 
@@ -23,6 +24,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - Progress Bar with Seek
 - Fullscreen Mode
 - Picture-in-Picture Mode
+- Subtitle Display and Control
 
 ### Playlist Features
 
@@ -32,6 +34,13 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - Track Selection
 - Playlist Toggle
 
+### Subtitle Features
+
+- Support for SRT subtitle files
+- External subtitle file loading
+- Subtitle visibility toggle
+- Automatic subtitle detection
+
 ### Keyboard Shortcuts
 
 - `Space` - Play/Pause
@@ -40,6 +49,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - `F` - Toggle Fullscreen
 - `M` - Toggle Mute
 - `Alt + P` - Toggle Picture-in-Picture
+- `C` - Toggle Subtitles
 
 ## Installation
 
@@ -114,6 +124,7 @@ npm run build
 
 - Video: MP4, WebM
 - Audio: MP3, WAV, OGG
+- Subtitles: SRT (converted to VTT internally)
 
 ## Contributing
 

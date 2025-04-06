@@ -41,4 +41,4 @@ Thumbs.db
 /packages/
 
 # Optional Inno Setup Output (if not using OutputDir)
-# WinMed-Setup-*.exe
+WinMed-Setup-*.exe
