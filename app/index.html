@@ -4,17 +4,17 @@
     <title>WinMed - Professional Media Player</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="styles.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
   </head>
   <body>
     <div class="title-bar">
       <div class="title-bar-drag-area">
         <div class="app-title">
-          <i class="fas fa-play-circle"></i>
-          <span>WinMed Player</span>
+          <img
+            src="../assets/icons/icon.svg"
+            alt="WinMed Player"
+            class="app-icon"
+          />
+          <span class="media-title">WinMed Player</span>
         </div>
       </div>
       <div class="window-controls">
@@ -24,11 +24,7 @@
         <button id="maximizeBtn" class="window-control-btn" title="Maximize">
           <i class="fas fa-square"></i>
         </button>
-        <button
-          id="closeBtn"
-          class="window-control-btn close-btn"
-          title="Close"
-        >
+        <button id="closeBtn" class="window-control-btn" title="Close">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -38,11 +34,15 @@
       <div class="sidebar">
         <div class="playlist-header">
           <div class="playlist-title">
-            <i class="fas fa-list-ul"></i>
-            <h2>Media Playlist</h2>
+            <img
+              src="../assets/icons/svg/playlist.svg"
+              alt="Playlist"
+              class="icon"
+            />
+            <h2 class="playlist-title-text">Media Playlist</h2>
           </div>
           <button id="addFile" class="btn" title="Add Media File">
-            <i class="fas fa-plus"></i> Add File
+            <span>Add File</span>
           </button>
         </div>
         <div class="playlist" id="playlist">
@@ -56,7 +56,11 @@
           class="btn toggle-playlist"
           title="Toggle Playlist"
         >
-          <i class="fas fa-list"></i>
+          <img
+            src="../assets/icons/svg/playlist.svg"
+            alt="Toggle Playlist"
+            class="icon"
+          />
         </button>
 
         <div class="media-container">
@@ -65,11 +69,14 @@
           <div id="subtitleContainer" class="subtitle-container"></div>
           <div class="welcome-screen">
             <div class="welcome-content">
-              <i class="fas fa-film welcome-icon"></i>
+              <img
+                src="../assets/icons/svg/video.svg"
+                alt="WinMed"
+                class="welcome-icon"
+              />
               <h2>Welcome to WinMed Player</h2>
               <p>Drop your media files here or click to select</p>
               <button id="selectFileBtn" class="welcome-btn">
-                <i class="fas fa-folder-open"></i>
                 Select Files
               </button>
             </div>
@@ -90,26 +97,60 @@
           <div class="control-buttons">
             <div class="playback-controls">
               <button id="shuffleBtn" class="btn" title="Shuffle">
-                <i class="fas fa-random"></i>
+                <img
+                  src="../assets/icons/svg/shuffle.svg"
+                  alt="Shuffle"
+                  class="icon"
+                />
               </button>
               <button id="prevBtn" class="btn" title="Previous Track">
-                <i class="fas fa-backward"></i>
+                <img
+                  src="../assets/icons/svg/previous.svg"
+                  alt="Previous"
+                  class="icon"
+                />
               </button>
               <button id="playPauseBtn" class="btn" title="Play/Pause">
-                <i class="fas fa-play"></i>
+                <img
+                  src="../assets/icons/svg/play.svg"
+                  alt="Play"
+                  class="icon play-icon"
+                />
+                <img
+                  src="../assets/icons/svg/pause.svg"
+                  alt="Pause"
+                  class="icon pause-icon"
+                />
               </button>
               <button id="nextBtn" class="btn" title="Next Track">
-                <i class="fas fa-forward"></i>
+                <img
+                  src="../assets/icons/svg/next.svg"
+                  alt="Next"
+                  class="icon"
+                />
               </button>
               <button id="repeatBtn" class="btn" title="Repeat">
-                <i class="fas fa-redo"></i>
+                <img
+                  src="../assets/icons/svg/repeat.svg"
+                  alt="Repeat"
+                  class="icon"
+                />
               </button>
             </div>
 
             <div class="secondary-controls">
               <div class="volume-control">
                 <button id="muteBtn" class="btn" title="Mute">
-                  <i class="fas fa-volume-up"></i>
+                  <img
+                    src="../assets/icons/svg/volume.svg"
+                    alt="Volume"
+                    class="icon volume-icon"
+                  />
+                  <img
+                    src="../assets/icons/svg/mute.svg"
+                    alt="Mute"
+                    class="icon mute-icon"
+                  />
                 </button>
                 <input
                   type="range"
@@ -123,7 +164,11 @@
               <!-- Subtitle control button and menu -->
               <div class="subtitle-control">
                 <button id="subtitleBtn" class="btn" title="Subtitles">
-                  <i class="fas fa-closed-captioning"></i>
+                  <img
+                    src="../assets/icons/svg/subtitles.svg"
+                    alt="Subtitles"
+                    class="icon"
+                  />
                 </button>
                 <div id="subtitleMenu" class="subtitle-menu">
                   <div class="subtitle-menu-header">
@@ -135,7 +180,7 @@
                   </div>
                   <div class="subtitle-menu-footer">
                     <button id="subtitleUploadBtn" class="subtitle-upload-btn">
-                      <i class="fas fa-upload"></i> Upload Subtitle
+                      Upload Subtitle
                     </button>
                     <input
                       type="file"
@@ -147,10 +192,18 @@
                 </div>
               </div>
               <button id="pipBtn" class="btn" title="Picture in Picture">
-                <i class="fas fa-external-link-alt"></i>
+                <img
+                  src="../assets/icons/svg/pip.svg"
+                  alt="Picture in Picture"
+                  class="icon"
+                />
               </button>
               <button id="fullscreenBtn" class="btn" title="Fullscreen">
-                <i class="fas fa-expand"></i>
+                <img
+                  src="../assets/icons/svg/fullscreen.svg"
+                  alt="Fullscreen"
+                  class="icon"
+                />
               </button>
             </div>
           </div>

@@ -34,6 +34,7 @@ const subtitleList = document.getElementById("subtitleList");
 const subtitleContainer = document.getElementById("subtitleContainer");
 const subtitleUploadBtn = document.getElementById("subtitleUploadBtn");
 const subtitleUploadInput = document.getElementById("subtitleUploadInput");
+const mediaTitleElement = document.querySelector(".media-title");
 
 // State
 let playlistItems = [];
@@ -200,7 +201,16 @@ addFileBtn.addEventListener("click", async () => {
   }
 });
 
-playPauseBtn.addEventListener("click", togglePlayPause);
+playPauseBtn.addEventListener("click", () => {
+  if (videoPlayer.paused) {
+    videoPlayer.play();
+    playPauseBtn.classList.add("playing");
+  } else {
+    videoPlayer.pause();
+    playPauseBtn.classList.remove("playing");
+  }
+});
+
 prevBtn.addEventListener("click", playPrevious);
 nextBtn.addEventListener("click", playNext);
 volumeSlider.addEventListener("input", handleVolumeChange);
@@ -229,7 +239,17 @@ document.addEventListener("mouseup", (e) => {
 fullscreenBtn.addEventListener("click", toggleFullscreen);
 shuffleBtn.addEventListener("click", toggleShuffle);
 repeatBtn.addEventListener("click", toggleRepeat);
-muteBtn.addEventListener("click", toggleMute);
+muteBtn.addEventListener("click", () => {
+  if (videoPlayer.muted) {
+    videoPlayer.muted = false;
+    muteBtn.classList.remove("muted");
+    volumeSlider.value = videoPlayer.volume * 100;
+  } else {
+    videoPlayer.muted = true;
+    muteBtn.classList.add("muted");
+    volumeSlider.value = 0;
+  }
+});
 togglePlaylistBtn.addEventListener("click", () => {
   container.classList.toggle("hide-playlist");
 });
@@ -238,6 +258,24 @@ pipBtn.addEventListener("click", togglePictureInPicture);
 videoPlayer.addEventListener("timeupdate", updateProgress);
 videoPlayer.addEventListener("loadedmetadata", updateDuration);
 videoPlayer.addEventListener("ended", playNext);
+
+// Update play/pause button state when video state changes
+videoPlayer.addEventListener("play", () => {
+  playPauseBtn.classList.add("playing");
+});
+
+videoPlayer.addEventListener("pause", () => {
+  playPauseBtn.classList.remove("playing");
+});
+
+// Update mute button state when volume changes
+videoPlayer.addEventListener("volumechange", () => {
+  if (videoPlayer.muted || videoPlayer.volume === 0) {
+    muteBtn.classList.add("muted");
+  } else {
+    muteBtn.classList.remove("muted");
+  }
+});
 
 // Functions
 function addToPlaylist(filePath) {
@@ -277,6 +315,10 @@ function playFile(index) {
     try {
       currentIndex = index;
       const filePath = playlistItems[index];
+      const fileName = filePath.split(/[/\\]/).pop();
+
+      // Update title bar with current media
+      mediaTitleElement.textContent = fileName;
 
       // Create a proper file URL that handles spaces and special characters
       // Use URL constructor for proper encoding
@@ -337,10 +379,10 @@ function playFile(index) {
 function togglePlayPause() {
   if (videoPlayer.paused) {
     videoPlayer.play();
-    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    playPauseBtn.classList.add("playing");
   } else {
     videoPlayer.pause();
-    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    playPauseBtn.classList.remove("playing");
   }
 }
 
@@ -445,9 +487,7 @@ function toggleFullscreen() {
 
 function toggleMute() {
   videoPlayer.muted = !videoPlayer.muted;
-  muteBtn.innerHTML = videoPlayer.muted
-    ? '<i class="fas fa-volume-mute"></i>'
-    : '<i class="fas fa-volume-up"></i>';
+  muteBtn.classList.toggle("muted", videoPlayer.muted);
   volumeSlider.value = videoPlayer.muted ? 0 : videoPlayer.volume * 100;
 }
 
@@ -518,6 +558,7 @@ function removeFromPlaylist(index) {
     } else {
       currentIndex = -1;
       videoPlayer.src = "";
+      mediaTitleElement.textContent = "WinMed Player";
     }
   } else if (currentIndex > index) {
     currentIndex--;
