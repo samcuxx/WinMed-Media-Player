@@ -511,15 +511,15 @@ function formatTime(seconds) {
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch((err) => {
-      console.error(`Error attempting to enable fullscreen: ${err.message}`);
-    });
-    container.classList.add("fullscreen");
+    container.requestFullscreen();
     showOSD("../assets/icons/svg/fullscreen.svg", "Fullscreen");
+    container.classList.add("fullscreen");
+    startControlsAutoHide();
   } else {
     document.exitFullscreen();
-    container.classList.remove("fullscreen");
     showOSD("../assets/icons/svg/fullscreen-exit.svg", "Exit Fullscreen");
+    container.classList.remove("fullscreen", "hide-controls");
+    stopControlsAutoHide();
   }
 }
 

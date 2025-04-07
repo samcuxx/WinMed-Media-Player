@@ -1108,57 +1108,52 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* Auto-hiding controls in fullscreen */
 .container.fullscreen {
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-}
-
-.container.fullscreen .title-bar {
-  display: none;
-}
-
-.container.fullscreen .media-container {
-  height: 100%;
-  width: 100%;
   position: relative;
 }
 
-.container.fullscreen .controls {
+.container.fullscreen .controls,
+.container.fullscreen .toggle-playlist,
+.container.fullscreen .title-bar {
   position: absolute;
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.container.fullscreen .controls {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  padding: 20px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+  padding: 20px 15px 15px;
 }
 
-.container.fullscreen:hover .controls {
-  opacity: 1;
+.container.fullscreen .title-bar {
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+}
+
+.container.fullscreen.hide-controls .controls,
+.container.fullscreen.hide-controls .toggle-playlist,
+.container.fullscreen.hide-controls .title-bar {
+  transform: translateY(100%);
+  opacity: 0;
 }
 
 .container.fullscreen .toggle-playlist {
-  position: fixed;
   top: 20px;
   left: 20px;
-  z-index: 1000;
+  opacity: 1;
 }
 
-.container.fullscreen .subtitle-container {
-  bottom: 100px;
-}
-
-.container.fullscreen .osd-container {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
+/* Show controls on hover */
+.container.fullscreen.hide-controls:hover .controls,
+.container.fullscreen.hide-controls:hover .toggle-playlist,
+.container.fullscreen.hide-controls:hover .title-bar {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 /* Cursor hiding when inactive */
