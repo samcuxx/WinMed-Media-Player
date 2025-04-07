@@ -163,6 +163,23 @@ let mainWindow;
 app.whenReady().then(() => {
   mainWindow = createWindow();
 
+  // Send a message to initialize cursor and controls behavior
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.send("app-ready");
+
+    // Also send window state
+    mainWindow.webContents.send(
+      "window-state-changed",
+      mainWindow.isMaximized()
+    );
+
+    // Send startup file if it exists
+    if (global.startupFile) {
+      console.log("Sending startup file to renderer:", global.startupFile);
+      mainWindow.webContents.send("open-file", global.startupFile);
+    }
+  });
+
   // Handle file open events from protocol (winmed://)
   app.on("open-url", (event, url) => {
     event.preventDefault();
@@ -196,14 +213,6 @@ app.whenReady().then(() => {
       console.log("Protocol handler: Path does not exist:", filePath);
     }
   });
-
-  // Pass startup file to renderer if it exists
-  if (global.startupFile) {
-    mainWindow.webContents.on("did-finish-load", () => {
-      console.log("Sending startup file to renderer:", global.startupFile);
-      mainWindow.webContents.send("open-file", global.startupFile);
-    });
-  }
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow();

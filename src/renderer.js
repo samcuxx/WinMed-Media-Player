@@ -36,6 +36,34 @@ const subtitleUploadBtn = document.getElementById("subtitleUploadBtn");
 const subtitleUploadInput = document.getElementById("subtitleUploadInput");
 const mediaTitleElement = document.querySelector(".media-title");
 
+// OSD Elements
+const osdContainer = document.getElementById("osdContainer");
+const osdIcon = document.getElementById("osdIcon");
+const osdText = document.getElementById("osdText");
+
+// OSD Functions
+let osdTimeout = null;
+
+function showOSD(iconPath, text) {
+  // Clear any existing timeout
+  if (osdTimeout) {
+    clearTimeout(osdTimeout);
+  }
+
+  // Set icon and text
+  osdIcon.src = iconPath;
+  osdIcon.alt = text;
+  osdText.textContent = text;
+
+  // Show the OSD
+  osdContainer.classList.add("show");
+
+  // Hide after 1.5 seconds
+  osdTimeout = setTimeout(() => {
+    osdContainer.classList.remove("show");
+  }, 1500);
+}
+
 // State
 let playlistItems = [];
 let currentIndex = -1;
@@ -143,20 +171,30 @@ document.addEventListener("keydown", (e) => {
     case "ArrowLeft":
       e.preventDefault();
       videoPlayer.currentTime -= 5; // Rewind 5 seconds
+      showOSD("../assets/icons/svg/rewind.svg", "Rewind 5s");
       break;
     case "ArrowRight":
       e.preventDefault();
       videoPlayer.currentTime += 5; // Forward 5 seconds
+      showOSD("../assets/icons/svg/forward.svg", "Forward 5s");
       break;
     case "ArrowUp":
       e.preventDefault();
       videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
       volumeSlider.value = videoPlayer.volume * 100;
+      showOSD(
+        "../assets/icons/svg/volume.svg",
+        `Volume: ${Math.round(videoPlayer.volume * 100)}%`
+      );
       break;
     case "ArrowDown":
       e.preventDefault();
       videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
       volumeSlider.value = videoPlayer.volume * 100;
+      showOSD(
+        "../assets/icons/svg/volume.svg",
+        `Volume: ${Math.round(videoPlayer.volume * 100)}%`
+      );
       break;
     case "KeyF":
       toggleFullscreen();
@@ -171,11 +209,13 @@ document.addEventListener("keydown", (e) => {
       } else {
         // P for Previous track
         playPrevious();
+        showOSD("../assets/icons/svg/previous.svg", "Previous Track");
       }
       break;
     case "KeyN":
       // N for Next track
       playNext();
+      showOSD("../assets/icons/svg/next.svg", "Next Track");
       break;
     case "KeyC":
       // Added C key for toggling subtitles
@@ -205,9 +245,11 @@ playPauseBtn.addEventListener("click", () => {
   if (videoPlayer.paused) {
     videoPlayer.play();
     playPauseBtn.classList.add("playing");
+    showOSD("../assets/icons/svg/play.svg", "Play");
   } else {
     videoPlayer.pause();
     playPauseBtn.classList.remove("playing");
+    showOSD("../assets/icons/svg/pause.svg", "Pause");
   }
 });
 
@@ -244,10 +286,12 @@ muteBtn.addEventListener("click", () => {
     videoPlayer.muted = false;
     muteBtn.classList.remove("muted");
     volumeSlider.value = videoPlayer.volume * 100;
+    showOSD("../assets/icons/svg/volume.svg", "Unmuted");
   } else {
     videoPlayer.muted = true;
     muteBtn.classList.add("muted");
     volumeSlider.value = 0;
+    showOSD("../assets/icons/svg/mute.svg", "Muted");
   }
 });
 togglePlaylistBtn.addEventListener("click", () => {
@@ -380,9 +424,11 @@ function togglePlayPause() {
   if (videoPlayer.paused) {
     videoPlayer.play();
     playPauseBtn.classList.add("playing");
+    showOSD("../assets/icons/svg/play.svg", "Play");
   } else {
     videoPlayer.pause();
     playPauseBtn.classList.remove("playing");
+    showOSD("../assets/icons/svg/pause.svg", "Pause");
   }
 }
 
@@ -464,31 +510,151 @@ function formatTime(seconds) {
 }
 
 function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    document
-      .exitFullscreen()
-      .then(() => {
-        updateSubtitlePositioning();
-      })
-      .catch(() => {
-        // Silent error handling for fullscreen
-      });
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.error(`Error attempting to enable fullscreen: ${err.message}`);
+    });
+    container.classList.add("fullscreen");
+    showOSD("../assets/icons/svg/fullscreen.svg", "Fullscreen");
   } else {
-    videoPlayer
-      .requestFullscreen()
-      .then(() => {
-        updateSubtitlePositioning();
-      })
-      .catch(() => {
-        // Silent error handling for fullscreen
-      });
+    document.exitFullscreen();
+    container.classList.remove("fullscreen");
+    showOSD("../assets/icons/svg/fullscreen-exit.svg", "Exit Fullscreen");
   }
 }
+
+// Variables for controls auto-hide
+let controlsTimeout = null;
+let isMouseMoving = false;
+let lastMouseMoveTime = Date.now();
+let cursorHideTimeout = null;
+let inactivityTracking = false;
+
+function startControlsAutoHide() {
+  // Show controls initially
+  container.classList.remove("hide-controls", "hide-cursor");
+
+  // Set up mouse move listener if not already tracking
+  if (!inactivityTracking) {
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mousedown", handleUserActivity);
+    document.addEventListener("keydown", handleUserActivity);
+    inactivityTracking = true;
+  }
+
+  // Start the auto-hide timer
+  resetControlsTimeout();
+}
+
+function stopControlsAutoHide() {
+  // Remove the mouse move listener
+  document.removeEventListener("mousemove", handleMouseMove);
+  document.removeEventListener("mousedown", handleUserActivity);
+  document.removeEventListener("keydown", handleUserActivity);
+  inactivityTracking = false;
+
+  // Clear any existing timeout
+  if (controlsTimeout) {
+    clearTimeout(controlsTimeout);
+    controlsTimeout = null;
+  }
+
+  if (cursorHideTimeout) {
+    clearTimeout(cursorHideTimeout);
+    cursorHideTimeout = null;
+  }
+
+  // Ensure cursor and controls are visible
+  container.classList.remove("hide-controls", "hide-cursor");
+}
+
+function handleUserActivity() {
+  lastMouseMoveTime = Date.now();
+
+  // Show controls and cursor if they were hidden
+  if (
+    container.classList.contains("hide-controls") ||
+    container.classList.contains("hide-cursor")
+  ) {
+    container.classList.remove("hide-controls", "hide-cursor");
+  }
+
+  // Reset the auto-hide timer
+  resetControlsTimeout();
+}
+
+function handleMouseMove() {
+  handleUserActivity();
+}
+
+function resetControlsTimeout() {
+  // Clear any existing timeout
+  if (controlsTimeout) {
+    clearTimeout(controlsTimeout);
+  }
+
+  if (cursorHideTimeout) {
+    clearTimeout(cursorHideTimeout);
+  }
+
+  // Set new timeout to hide controls after 3 seconds of no mouse movement
+  controlsTimeout = setTimeout(() => {
+    if (!videoPlayer.paused) {
+      container.classList.add("hide-controls");
+
+      // Set timeout to hide cursor 1 second after controls are hidden
+      cursorHideTimeout = setTimeout(() => {
+        if (!videoPlayer.paused) {
+          container.classList.add("hide-cursor");
+        }
+      }, 1000);
+    }
+  }, 3000);
+}
+
+// Add fullscreen change event listener
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    container.classList.remove("fullscreen");
+    // Don't stop auto-hide, we still want it in regular mode
+  } else {
+    container.classList.add("fullscreen");
+  }
+});
+
+// Start inactivity tracking when video plays (regardless of fullscreen state)
+videoPlayer.addEventListener("play", () => {
+  startControlsAutoHide();
+});
+
+// Prevent controls and cursor from hiding while video is paused
+videoPlayer.addEventListener("pause", () => {
+  container.classList.remove("hide-controls", "hide-cursor");
+});
+
+// Initialize cursor and controls behavior when document is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  if (!videoPlayer.paused) {
+    startControlsAutoHide();
+  }
+});
+
+// Start auto-hide when player is ready with actual content
+videoPlayer.addEventListener("loadeddata", () => {
+  if (!videoPlayer.paused) {
+    startControlsAutoHide();
+  }
+});
 
 function toggleMute() {
   videoPlayer.muted = !videoPlayer.muted;
   muteBtn.classList.toggle("muted", videoPlayer.muted);
-  volumeSlider.value = videoPlayer.muted ? 0 : videoPlayer.volume * 100;
+  showOSD(
+    videoPlayer.muted
+      ? "../assets/icons/svg/mute.svg"
+      : "../assets/icons/svg/volume.svg",
+    videoPlayer.muted ? "Muted" : "Unmuted"
+  );
 }
 
 function toggleShuffle() {
@@ -652,14 +818,12 @@ videoPlayer.addEventListener("leavepictureinpicture", () => {
 });
 
 async function togglePictureInPicture() {
-  try {
-    if (document.pictureInPictureElement) {
-      await document.exitPictureInPicture();
-    } else if (document.pictureInPictureEnabled) {
-      await videoPlayer.requestPictureInPicture();
-    }
-  } catch (error) {
-    console.error("PiP error:", error);
+  if (document.pictureInPictureElement) {
+    await document.exitPictureInPicture();
+    showOSD("../assets/icons/svg/pip.svg", "Exit Picture-in-Picture");
+  } else if (document.pictureInPictureEnabled) {
+    await videoPlayer.requestPictureInPicture();
+    showOSD("../assets/icons/svg/pip.svg", "Picture-in-Picture");
   }
 }
 
@@ -774,6 +938,11 @@ mediaContainer.addEventListener("drop", (e) => {
 // Subtitle Functions
 function toggleSubtitles() {
   subtitlesVisible = !subtitlesVisible;
+  subtitleContainer.style.display = subtitlesVisible ? "block" : "none";
+  showOSD(
+    "../assets/icons/svg/subtitles.svg",
+    subtitlesVisible ? "Subtitles On" : "Subtitles Off"
+  );
 
   // Update native text tracks based on fullscreen state
   if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
@@ -1503,3 +1672,61 @@ function updateSubtitlePositioning() {
 
 // Add event listener for fullscreen change
 document.addEventListener("fullscreenchange", updateSubtitlePositioning);
+
+// Auto-hide controls and cursor when inactive
+let inactivityTimer;
+let cursorTimer;
+const INACTIVITY_DELAY = 1000; // Reduced from 3000 to 1000ms for more immediate hiding
+const CURSOR_DELAY = 1500; // Reduced from 4000 to 1500ms
+
+function resetInactivityTimers() {
+  clearTimeout(inactivityTimer);
+  clearTimeout(cursorTimer);
+
+  // Show controls and cursor immediately
+  container.classList.remove("hide-controls", "hide-cursor");
+
+  // Start new timers
+  if (!videoPlayer.paused && videoPlayer.src) {
+    inactivityTimer = setTimeout(() => {
+      container.classList.add("hide-controls");
+    }, INACTIVITY_DELAY);
+
+    cursorTimer = setTimeout(() => {
+      container.classList.add("hide-cursor");
+    }, CURSOR_DELAY);
+  }
+}
+
+function startInactivityTracking() {
+  // Clear any existing timers
+  clearTimeout(inactivityTimer);
+  clearTimeout(cursorTimer);
+
+  // Add event listeners for user activity
+  const activityEvents = ["mousemove", "mousedown", "keydown", "wheel"];
+  activityEvents.forEach((event) => {
+    document.addEventListener(event, resetInactivityTimers, { passive: true });
+  });
+
+  // Start tracking if video is playing
+  if (!videoPlayer.paused && videoPlayer.src) {
+    resetInactivityTimers();
+  }
+}
+
+// Listen for app ready message from main process
+ipcRenderer.on("app-ready", () => {
+  startInactivityTracking();
+});
+
+// Update video state tracking
+videoPlayer.addEventListener("play", () => {
+  startInactivityTracking();
+});
+
+videoPlayer.addEventListener("pause", () => {
+  clearTimeout(inactivityTimer);
+  clearTimeout(cursorTimer);
+  container.classList.remove("hide-controls", "hide-cursor");
+});

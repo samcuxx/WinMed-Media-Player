@@ -1052,3 +1052,142 @@ input[type="range"]::-webkit-slider-thumb:hover {
   position: absolute;
   transition: opacity 0.2s ease;
 }
+
+/* OSD (On-Screen Display) */
+.osd-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.osd-container.show {
+  opacity: 1;
+}
+
+.osd-icon-container {
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.osd-icon {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 2px 8px rgba(0, 217, 245, 0.4));
+}
+
+.osd-text {
+  margin-top: 12px;
+  color: #fff;
+  font-size: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
+  padding: 6px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Auto-hiding controls in fullscreen */
+.container.fullscreen {
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.container.fullscreen .title-bar {
+  display: none;
+}
+
+.container.fullscreen .media-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.container.fullscreen .controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.container.fullscreen:hover .controls {
+  opacity: 1;
+}
+
+.container.fullscreen .toggle-playlist {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.container.fullscreen .subtitle-container {
+  bottom: 100px;
+}
+
+.container.fullscreen .osd-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+/* Cursor hiding when inactive */
+.container.hide-cursor {
+  cursor: none;
+}
+
+/* Expand auto-hide controls for both fullscreen and normal mode */
+.container .controls,
+.container .toggle-playlist,
+.container .title-bar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.container.hide-controls .controls,
+.container.hide-controls .toggle-playlist,
+.container.hide-controls .title-bar {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.container .toggle-playlist {
+  opacity: 1;
+}
+
+/* Show controls on mouse movement */
+.container.hide-controls:hover .controls,
+.container.hide-controls:hover .toggle-playlist,
+.container.hide-controls:hover .title-bar {
+  transform: translateY(0);
+  opacity: 1;
+}
