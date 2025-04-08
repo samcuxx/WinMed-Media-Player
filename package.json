@@ -1,6 +1,6 @@
 {
     "name": "winmed",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "Professional Video and Audio Player",
     "main": "src/main.js",
     "scripts": {

@@ -2,7 +2,9 @@
 
 A modern, feature-rich media player built with Electron. WinMed provides a sleek, user-friendly interface for playing video and audio files with advanced playback controls.
 
-![WinMed Screenshot](screenshot.png)
+![WinMed Screenshot 1](Screenshots/Screenshot_1.png)
+![WinMed Screenshot 2](Screenshots/Screenshot_2.png)
+![WinMed Screenshot 3](Screenshots/Screenshot_3.png)
 
 ## Features
 
@@ -49,6 +51,7 @@ A modern, feature-rich media player built with Electron. WinMed provides a sleek
 - `F` - Toggle Fullscreen
 - `M` - Toggle Mute
 - `Alt + P` - Toggle Picture-in-Picture
+- `Ctrl + P` - Toggle Playlist Panel
 - `C` - Toggle Subtitles
 - `N` - Next Track
 - `P` - Previous Track
