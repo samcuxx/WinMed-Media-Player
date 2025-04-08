@@ -514,12 +514,12 @@ function toggleFullscreen() {
     container.requestFullscreen();
     showOSD("../assets/icons/svg/fullscreen.svg", "Fullscreen");
     container.classList.add("fullscreen");
-    startControlsAutoHide();
+    startControlsAutoHide(); // Only start auto-hide in fullscreen
   } else {
     document.exitFullscreen();
     showOSD("../assets/icons/svg/fullscreen-exit.svg", "Exit Fullscreen");
     container.classList.remove("fullscreen", "hide-controls");
-    stopControlsAutoHide();
+    stopControlsAutoHide(); // Stop auto-hide when exiting fullscreen
   }
 }
 
@@ -616,32 +616,16 @@ function resetControlsTimeout() {
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement) {
     container.classList.remove("fullscreen");
-    // Don't stop auto-hide, we still want it in regular mode
+    stopControlsAutoHide(); // Ensure auto-hide is stopped when exiting fullscreen
   } else {
     container.classList.add("fullscreen");
+    startControlsAutoHide(); // Start auto-hide when entering fullscreen
   }
 });
 
-// Start inactivity tracking when video plays (regardless of fullscreen state)
+// Start inactivity tracking when video plays (only in fullscreen)
 videoPlayer.addEventListener("play", () => {
-  startControlsAutoHide();
-});
-
-// Prevent controls and cursor from hiding while video is paused
-videoPlayer.addEventListener("pause", () => {
-  container.classList.remove("hide-controls", "hide-cursor");
-});
-
-// Initialize cursor and controls behavior when document is loaded
-document.addEventListener("DOMContentLoaded", () => {
-  if (!videoPlayer.paused) {
-    startControlsAutoHide();
-  }
-});
-
-// Start auto-hide when player is ready with actual content
-videoPlayer.addEventListener("loadeddata", () => {
-  if (!videoPlayer.paused) {
+  if (document.fullscreenElement) {
     startControlsAutoHide();
   }
 });
@@ -944,30 +928,10 @@ function toggleSubtitles() {
     subtitlesVisible ? "Subtitles On" : "Subtitles Off"
   );
 
-  // Update native text tracks based on fullscreen state
+  // Always keep native text tracks hidden
   if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
-    // Find the appropriate text track
-    let activeTrackIndex = -1;
     for (let i = 0; i < videoPlayer.textTracks.length; i++) {
-      if (
-        videoPlayer.textTracks[i].label ===
-        subtitleTracks[currentSubtitleTrack].language
-      ) {
-        activeTrackIndex = i;
-        break;
-      }
-    }
-
-    if (activeTrackIndex >= 0) {
-      // If in fullscreen, update the native track
-      if (document.fullscreenElement) {
-        videoPlayer.textTracks[activeTrackIndex].mode = subtitlesVisible
-          ? "showing"
-          : "disabled";
-      } else {
-        // Otherwise just update our custom display
-        videoPlayer.textTracks[activeTrackIndex].mode = "hidden";
-      }
+      videoPlayer.textTracks[i].mode = "hidden";
     }
   }
 
@@ -1268,7 +1232,7 @@ async function loadSubtitleTrack(trackIndex) {
 
     // First, disable all existing text tracks
     for (let i = 0; i < videoPlayer.textTracks.length; i++) {
-      videoPlayer.textTracks[i].mode = "disabled";
+      videoPlayer.textTracks[i].mode = "hidden";
     }
 
     // Update current index
@@ -1310,12 +1274,8 @@ async function loadSubtitleTrack(trackIndex) {
       parser.parse(vttText);
       parser.flush();
 
-      // Set the text track mode based on fullscreen state
-      if (document.fullscreenElement) {
-        textTrack.mode = "showing"; // Use native display in fullscreen
-      } else {
-        textTrack.mode = "hidden"; // Use our custom display in windowed mode
-      }
+      // Always use hidden mode for native text tracks
+      textTrack.mode = "hidden";
 
       // Enable subtitles if we loaded a track successfully
       subtitlesVisible = true;
@@ -1627,40 +1587,25 @@ function updateSubtitlePositioning() {
 
   if (isFullscreen) {
     subtitleContainer.classList.add("fullscreen");
-
-    // When in fullscreen, use native captions for better integration
+    // Always use our custom subtitle container
     if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
-      // Find the active text track (usually the last one we added)
-      let activeTrackIndex = -1;
+      // Ensure all native text tracks are hidden
       for (let i = 0; i < videoPlayer.textTracks.length; i++) {
-        if (
-          videoPlayer.textTracks[i].label ===
-          subtitleTracks[currentSubtitleTrack].language
-        ) {
-          activeTrackIndex = i;
-          break;
-        }
+        videoPlayer.textTracks[i].mode = "hidden";
       }
-
-      // If we found our track, enable it for native display
-      if (activeTrackIndex >= 0 && subtitlesVisible) {
-        videoPlayer.textTracks[activeTrackIndex].mode = "showing";
-        // Hide our custom display in fullscreen since we're using native captions
-        subtitleContainer.style.visibility = "hidden";
+      // Show our custom display if subtitles are enabled
+      if (subtitlesVisible) {
+        subtitleContainer.style.visibility = "visible";
+        subtitleContainer.style.opacity = "1";
       }
     }
   } else {
     subtitleContainer.classList.remove("fullscreen");
-
-    // When exiting fullscreen, switch back to our custom display
+    // Ensure native tracks remain hidden in windowed mode
     if (currentSubtitleTrack >= 0 && videoPlayer.textTracks.length > 0) {
-      // Disable all native text tracks
       for (let i = 0; i < videoPlayer.textTracks.length; i++) {
-        if (videoPlayer.textTracks[i].mode === "showing") {
-          videoPlayer.textTracks[i].mode = "hidden";
-        }
+        videoPlayer.textTracks[i].mode = "hidden";
       }
-
       // Show our custom display if subtitles are enabled
       if (subtitlesVisible) {
         subtitleContainer.style.visibility = "visible";
@@ -1729,4 +1674,14 @@ videoPlayer.addEventListener("pause", () => {
   clearTimeout(inactivityTimer);
   clearTimeout(cursorTimer);
   container.classList.remove("hide-controls", "hide-cursor");
+});
+
+// Add double-click event listener for fullscreen toggle
+mediaContainer.addEventListener("dblclick", (e) => {
+  // Prevent double click from triggering other events
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Toggle fullscreen
+  toggleFullscreen();
 });
