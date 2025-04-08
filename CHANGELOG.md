@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.5.0] - 2024-04-08
+
+### Added
+
+- New Ctrl + P keyboard shortcut to toggle playlist panel
+- Enhanced UI with new modern design elements
+- Improved playlist management interface
+- Added visual feedback for keyboard shortcuts
+- New screenshot gallery showcasing the latest features
+
+### Changed
+
+- Updated UI layout for better usability
+- Improved playlist panel visibility controls
+- Enhanced keyboard shortcut documentation
+- Refined media controls positioning
+
+### Fixed
+
+- Controls auto-hiding issue in non-fullscreen mode
+- Playlist panel toggle consistency
+- UI responsiveness in different window sizes
+
+### Known Issues
+
+- Controls auto-hide when not in fullscreen mode (work in progress)
+
 ## [1.3.0] - 2024-03-21
 
 ### Added
