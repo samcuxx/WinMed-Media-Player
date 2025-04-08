@@ -203,7 +203,11 @@ document.addEventListener("keydown", (e) => {
       toggleMute();
       break;
     case "KeyP":
-      if (e.altKey) {
+      if (e.ctrlKey) {
+        // Ctrl + P for Playlist toggle
+        container.classList.toggle("hide-playlist");
+        showOSD("../assets/icons/svg/playlist.svg", "Toggle Playlist");
+      } else if (e.altKey) {
         // Alt + P for Picture-in-Picture
         togglePictureInPicture();
       } else {
@@ -514,57 +518,42 @@ function toggleFullscreen() {
     container.requestFullscreen();
     showOSD("../assets/icons/svg/fullscreen.svg", "Fullscreen");
     container.classList.add("fullscreen");
-    startControlsAutoHide(); // Only start auto-hide in fullscreen
   } else {
     document.exitFullscreen();
     showOSD("../assets/icons/svg/fullscreen-exit.svg", "Exit Fullscreen");
     container.classList.remove("fullscreen", "hide-controls");
-    stopControlsAutoHide(); // Stop auto-hide when exiting fullscreen
   }
 }
 
+// Add double-click handler for fullscreen
+videoPlayer.addEventListener("dblclick", () => {
+  toggleFullscreen();
+});
+
 // Variables for controls auto-hide
-let controlsTimeout = null;
+let hideControlsTimeout;
 let isMouseMoving = false;
 let lastMouseMoveTime = Date.now();
 let cursorHideTimeout = null;
 let inactivityTracking = false;
 
 function startControlsAutoHide() {
-  // Show controls initially
-  container.classList.remove("hide-controls", "hide-cursor");
-
-  // Set up mouse move listener if not already tracking
-  if (!inactivityTracking) {
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mousedown", handleUserActivity);
-    document.addEventListener("keydown", handleUserActivity);
-    inactivityTracking = true;
+  // Only start auto-hide if we're in fullscreen mode
+  if (!document.fullscreenElement) {
+    return;
   }
 
-  // Start the auto-hide timer
-  resetControlsTimeout();
+  resetInactivityTimers();
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseleave", handleMouseLeave);
+  document.addEventListener("mouseenter", handleMouseEnter);
 }
 
 function stopControlsAutoHide() {
-  // Remove the mouse move listener
+  clearTimeout(hideControlsTimeout);
   document.removeEventListener("mousemove", handleMouseMove);
-  document.removeEventListener("mousedown", handleUserActivity);
-  document.removeEventListener("keydown", handleUserActivity);
-  inactivityTracking = false;
-
-  // Clear any existing timeout
-  if (controlsTimeout) {
-    clearTimeout(controlsTimeout);
-    controlsTimeout = null;
-  }
-
-  if (cursorHideTimeout) {
-    clearTimeout(cursorHideTimeout);
-    cursorHideTimeout = null;
-  }
-
-  // Ensure cursor and controls are visible
+  document.removeEventListener("mouseleave", handleMouseLeave);
+  document.removeEventListener("mouseenter", handleMouseEnter);
   container.classList.remove("hide-controls", "hide-cursor");
 }
 
@@ -589,8 +578,8 @@ function handleMouseMove() {
 
 function resetControlsTimeout() {
   // Clear any existing timeout
-  if (controlsTimeout) {
-    clearTimeout(controlsTimeout);
+  if (hideControlsTimeout) {
+    clearTimeout(hideControlsTimeout);
   }
 
   if (cursorHideTimeout) {
@@ -598,7 +587,7 @@ function resetControlsTimeout() {
   }
 
   // Set new timeout to hide controls after 3 seconds of no mouse movement
-  controlsTimeout = setTimeout(() => {
+  hideControlsTimeout = setTimeout(() => {
     if (!videoPlayer.paused) {
       container.classList.add("hide-controls");
 
@@ -1674,14 +1663,4 @@ videoPlayer.addEventListener("pause", () => {
   clearTimeout(inactivityTimer);
   clearTimeout(cursorTimer);
   container.classList.remove("hide-controls", "hide-cursor");
-});
-
-// Add double-click event listener for fullscreen toggle
-mediaContainer.addEventListener("dblclick", (e) => {
-  // Prevent double click from triggering other events
-  e.preventDefault();
-  e.stopPropagation();
-
-  // Toggle fullscreen
-  toggleFullscreen();
 });

@@ -221,60 +221,42 @@ app.whenReady().then(() => {
 
 // Handle opening files from file explorer
 app.on("second-instance", (event, commandLine, workingDirectory) => {
-  // Someone tried to run a second instance, focus our window instead
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
+  // Create a new window for the second instance
+  const newWindow = createWindow();
 
-    console.log("Second instance with command line:", commandLine);
+  console.log("Second instance with command line:", commandLine);
 
-    // Check if file path is provided in command line args
-    if (commandLine.length > 1) {
-      // Use the first non-flag argument as potential file path
-      const filePath = commandLine.find(
-        (arg) =>
-          !arg.startsWith("-") &&
-          !arg.startsWith("--") &&
-          arg !== process.execPath
-      );
+  // Check if file path is provided in command line args
+  if (commandLine.length > 1) {
+    // Use the first non-flag argument as potential file path
+    const filePath = commandLine.find(
+      (arg) =>
+        !arg.startsWith("-") &&
+        !arg.startsWith("--") &&
+        arg !== process.execPath
+    );
 
-      if (filePath) {
-        console.log("Second instance checking file path:", filePath);
+    if (filePath) {
+      console.log("Second instance checking file path:", filePath);
 
-        // Check if path exists AND is a file (not a directory) AND has valid extension
-        if (fs.existsSync(filePath)) {
-          const stats = fs.statSync(filePath);
-          if (stats.isFile()) {
-            const ext = path.extname(filePath).toLowerCase().substring(1); // Remove dot
-            if (supportedFileTypes.includes(ext)) {
-              const resolvedPath = path.resolve(filePath);
-              console.log("Second instance file path:", resolvedPath);
-              mainWindow.webContents.send("open-file", resolvedPath);
-            } else {
-              console.log(
-                "Second instance: File has unsupported extension:",
-                filePath
-              );
-            }
-          } else {
-            console.log(
-              "Second instance: Path exists but is not a file:",
-              filePath
-            );
+      // Check if path exists AND is a file (not a directory) AND has valid extension
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath);
+        if (stats.isFile()) {
+          const ext = path.extname(filePath).toLowerCase().substring(1); // Remove dot
+          if (supportedFileTypes.includes(ext)) {
+            const resolvedPath = path.resolve(filePath);
+            console.log("Second instance file path:", resolvedPath);
+            // Wait for window to be ready before sending the file
+            newWindow.webContents.on("did-finish-load", () => {
+              newWindow.webContents.send("open-file", resolvedPath);
+            });
           }
-        } else {
-          console.log("Second instance: Path does not exist:", filePath);
         }
       }
     }
   }
 });
-
-// Ensure single instance
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  app.quit();
-}
 
 app.on("window-all-closed", function () {
   if (process.platform !== "darwin") app.quit();

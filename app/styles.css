@@ -1149,7 +1149,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
   opacity: 0;
 }
 
-/* Show controls on hover in fullscreen only */
+.container.fullscreen .toggle-playlist {
+  top: 20px;
+  left: 20px;
+  opacity: 1;
+}
+
+/* Show controls on hover */
 .container.fullscreen.hide-controls:hover .controls,
 .container.fullscreen.hide-controls:hover .toggle-playlist,
 .container.fullscreen.hide-controls:hover .title-bar {
@@ -1157,23 +1163,33 @@ input[type="range"]::-webkit-slider-thumb:hover {
   opacity: 1;
 }
 
-.container.fullscreen .toggle-playlist {
-  top: 20px;
-  left: 20px;
-  opacity: 1;
-}
-
-/* Cursor hiding when inactive in fullscreen only */
-.container.fullscreen.hide-cursor {
+/* Cursor hiding when inactive */
+.container.hide-cursor {
   cursor: none;
 }
 
-/* Normal mode controls should always be visible */
-.container:not(.fullscreen) .controls,
-.container:not(.fullscreen) .toggle-playlist,
-.container:not(.fullscreen) .title-bar {
-  position: static;
-  transform: none;
+/* Expand auto-hide controls for both fullscreen and normal mode */
+.container .controls,
+.container .toggle-playlist,
+.container .title-bar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.container.hide-controls .controls,
+.container.hide-controls .toggle-playlist,
+.container.hide-controls .title-bar {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.container .toggle-playlist {
   opacity: 1;
-  transition: none;
+}
+
+/* Show controls on mouse movement */
+.container.hide-controls:hover .controls,
+.container.hide-controls:hover .toggle-playlist,
+.container.hide-controls:hover .title-bar {
+  transform: translateY(0);
+  opacity: 1;
 }
